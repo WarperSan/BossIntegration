@@ -4,3 +4,9 @@
 </a>
 
 <h1 align="center">Boss Integration</h1>
+A mod allowing to create modded bosses in an easy yet complete way.
+
+# Features
+- Boss informations accessible within the game
+- Toggle bosses to customize the challenge
+
