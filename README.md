@@ -98,7 +98,6 @@ public class CompleteBoss : ModBoss
     public override void SkullEffect(Bloon boss)
     {
         /* Skull Effect */
-        base.SkullEffect(boss);
     }
 
     public override string TimerDescription => /* Timer description */;
@@ -155,7 +154,6 @@ public class FullBoss : ModBoss
     public override void SkullEffect(Bloon boss)
     {
         /* Skull Effect */
-        base.SkullEffect(boss);
     }
 
     public override string TimerDescription => /* Timer description */;
