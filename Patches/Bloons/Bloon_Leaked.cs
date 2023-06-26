@@ -23,7 +23,7 @@ internal class Blooon_Leaked
 
             if (result)
             {
-                boss.OnLeak(__instance);
+                boss.OnLeakMandatory(__instance);
             }
         }
 

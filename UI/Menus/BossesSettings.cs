@@ -84,7 +84,7 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
         table.AddScrollContent(panel);
         //panel.RectTransform.localPosition = new Vector2(0, -panel.RectTransform.sizeDelta.y + ModBoss.Cache.Count * 20);
 
-        table.ScrollContent.RectTransform.sizeDelta = new Vector2(panel.RectTransform.sizeDelta.x + size + 2 * spacing, panel.RectTransform.sizeDelta.y / 4);
+        table.ScrollContent.RectTransform.sizeDelta = new Vector2(panel.RectTransform.sizeDelta.x, panel.RectTransform.sizeDelta.y / 2);
 
         var roundScrollPanel = RoundPanelInit(table, rounds);
         var bossScrollPanel = BossPanelInit(table, rounds);
@@ -92,15 +92,8 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
 
         table.ScrollRect.onValueChanged.AddListener(new Action<Vector2>((r) =>
         {
-            if (table.ScrollRect.velocity.x != 0)
-            {
-                roundScrollPanel.ScrollRect.content.position = FollowOtherScroll(roundScrollPanel, table, true, false);
-            }
-
-            if (table.ScrollRect.velocity.y != 0)
-            {
-                bossScrollPanel.ScrollRect.content.position = FollowOtherScroll(bossScrollPanel, table, false, true);
-            }
+            roundScrollPanel.ScrollRect.content.position = FollowOtherScroll(roundScrollPanel, table, true, false);
+            bossScrollPanel.ScrollRect.content.position = FollowOtherScroll(bossScrollPanel, table, false, true);
         }));
     }
 
@@ -186,9 +179,9 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
         for (int i = 0; i < bosses.Count; i++)
         {
             ModBoss boss = bosses[i];
-            float yPosition = ((bosses.Count >= maxBoss ? 8 : bosses.Count) / 2 - i) * (size + 2 * spacing);
+            float yPosition = (bosses.Count / 2 - i) * (size + spacing * 2) - size / 2;
 
-            ModHelperPanel btnPanel = bossPanel.AddPanel(new Info("BtnPanel" + boss.Name, 0, yPosition + spacing, 200), VanillaSprites.CircleRing);
+            ModHelperPanel btnPanel = bossPanel.AddPanel(new Info("BtnPanel" + boss.Name, 0, yPosition, 200), null);
 
             ModHelperButton b = btnPanel.AddButton(new Info("BossLabel" + boss.Name, 150), GetTextureGUID(boss.mod, boss.Icon), new Action(() =>
             {

@@ -196,8 +196,13 @@ internal class ModBossUI
         IconsHolder.transform.localPosition = new Vector2(-WaitPanel.RectTransform.sizeDelta.x / 2 * 0.85f, 0);
 
         List<ModBoss> defaultUiBosses = nearBosses.FindAll(boss => boss.UsingDefaultWaitingUi);
+        int count = 0;
         foreach (var boss in defaultUiBosses)
         {
+            if (count >= 5)
+                continue;
+
+            count++;
             objs.Add(IconsHolder.AddImage(new Info(boss.Name + "-Icon", 0, 0, 200, new Vector2(.1f, .5f)), ModContent.GetSprite(boss.mod, boss.Icon)).gameObject);
         }
         SetCircular(Vector2.zero, objs, 100);

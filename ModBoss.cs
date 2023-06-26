@@ -29,25 +29,11 @@ namespace BossIntegration;
 /// </summary>
 public abstract class ModBoss : ModBloon
 {
-    const int FontMedium = 69;
-
-    /// <inheritdoc />
-    public sealed override string BaseBloon => BloonType.Bad;
-
     public static readonly Dictionary<string, ModBoss> Cache = new();
 
     public static Dictionary<ObjectId, BossUI> BossesAlive = new();
-    public struct BossUI
-    {
-        public ModBoss Boss;
-        public BossRoundInfo RoundInfo;
-        public ModHelperPanel Panel;
-        public Image HpBar;
-        public ModHelperText HpText;
-        public ModHelperButton Icon;
-        public List<ModHelperImage> Skulls;
-    }
 
+    #region Permissions
     public static Dictionary<string, Dictionary<int, bool>> Permissions = InitPermissions();
     private static Dictionary<string, Dictionary<int, bool>> InitPermissions()
     {
@@ -73,18 +59,9 @@ public abstract class ModBoss : ModBloon
 
     public static bool GetPermission(ModBoss boss, int round)
         => ModBoss.Permissions.TryGetValue(boss.ToString() ?? "", out var permissions) && permissions.TryGetValue(round, out bool allowed) ? allowed : true;
+    #endregion
 
-    const uint maxLines = 3;
-
-    /// <summary>
-    /// The people who worked/helped to create the mod, but aren't the authors
-    /// </summary>
-    public virtual string? ExtraCredits { get; }
-
-    /// <summary>
-    /// Called when the boss is spawned. Must not be overriden
-    /// </summary>
-    /// <param name="bloon"></param>
+    #region Mandatories
     internal void OnSpawnMandatory(Bloon bloon, ModBoss boss)
     {
         int round = InGame.Bridge.GetCurrentRound() + 1;
@@ -200,7 +177,34 @@ public abstract class ModBoss : ModBloon
 
         OnSpawn(bloon);
     }
+    internal void OnLeakMandatory(Bloon bloon)
+    {
+        RemoveUI(bloon);
+        OnLeak(bloon);
+    }
+    internal void OnPopMandatory(Bloon bloon)
+    {
+        RemoveUI(bloon);
+        OnPop(bloon);
+    }
+    internal void OnDamageMandatory(Bloon bloon, float totalAmount)
+    {
+        if (BossesAlive.TryGetValue(bloon.Id, out BossUI ui))
+        {
+            if (ui.HpBar != default(Image))
+                ui.HpBar.fillAmount = bloon.health / bloon.bloonModel.maxHealth;
 
+            if (ui.HpText != default(ModHelperText))
+            {
+                ui.HpText.SetText($"{Mathf.FloorToInt(bloon.health)} / {bloon.bloonModel.maxHealth}");
+            }
+        }
+
+        OnDamage(bloon, totalAmount);
+    }
+    #endregion
+
+    #region Virtuals
     /// <summary>
     /// Called when the boss is spawned
     /// </summary>
@@ -211,37 +215,25 @@ public abstract class ModBoss : ModBloon
     /// Called when the boss is leaked
     /// </summary>
     /// <param name="bloon"></param>
-    public virtual void OnLeak(Bloon bloon)
-    {
-        RemoveUI(bloon);
-    }
+    public virtual void OnLeak(Bloon bloon) { }
 
     /// <summary>
     /// Called when the boss is popped
     /// </summary>
     /// <param name="bloon"></param>
-    public virtual void OnPop(Bloon bloon)
-    {
-        RemoveUI(bloon);
-    }
+    public virtual void OnPop(Bloon bloon) { }
 
     /// <summary>
-    /// Called when the boss takes a damage. Usually used to update the health bar
+    /// Called when the boss takes a damage
     /// </summary>
     /// <param name="bloon"></param>
     /// <param name="totalAmount"></param>
-    public virtual void OnDamage(Bloon bloon, float totalAmount)
-    {
-        if (BossesAlive.TryGetValue(bloon.Id, out BossUI ui))
-        {
-            if (ui.HpBar != default(Image))
-                ui.HpBar.fillAmount = bloon.health / bloon.bloonModel.maxHealth;
+    public virtual void OnDamage(Bloon bloon, float totalAmount) { }
 
-            if (ui.HpText != default(ModHelperText))
-                ui.HpText.SetText($"{Mathf.FloorToInt(bloon.health)} / {bloon.bloonModel.maxHealth}");
-        }
-    }
+    public virtual void OnBossesRemoved() { }
+    #endregion
 
+    #region Stats
     /// <summary>
     /// The base speed of the boss, 4.5 is the default for a BAD and 25 is the default for a red bloon
     /// </summary>
@@ -251,6 +243,173 @@ public abstract class ModBoss : ModBloon
     /// The base health of the boss
     /// </summary>
     public virtual float Health => 20_000f;
+
+    /// <summary>
+    /// Whether the boss should always cause defeat on leak
+    /// </summary>
+    public virtual bool AlwaysDefeatOnLeak => true;
+
+    /// <summary>
+    /// Whether the boss should block rounds from spawning, behaving like a normal bloon
+    /// </summary>
+    public virtual bool BlockRounds => false;
+
+    /// <summary>
+    /// All the informations a boss holds for a specific round
+    /// </summary>
+    public struct BossRoundInfo
+    {
+        /// <summary>
+        /// Tier of the boss on this round
+        /// </summary>
+        public uint? tier = null;
+
+        /// <summary>
+        /// Amount of skulls the boss has
+        /// </summary>
+        public uint? skullCount = null;
+
+        /// <summary>
+        /// Positions of the skulls
+        /// </summary>
+        /// <remarks>
+        /// If not specified, the skulls' position will be placed evenly (3 skulls => 0.75, 0.5, 0.25)
+        /// </remarks>
+        public float[]? percentageValues = null;
+
+        /// <summary>
+        /// The description of this particular skull effect
+        /// </summary>
+        /// <remarks>
+        /// If not specified, the API will use <see cref="SkullDescription"/>
+        /// </remarks>
+        public string? skullDescription = null;
+
+        /// <summary>
+        /// Determines if the boss's health should go down while it's skull effect is on
+        /// </summary>
+        public bool? preventFallThrough = null;
+
+        /// <summary>
+        /// Determines if the timer starts immediately
+        /// </summary>
+        public bool? triggerImmediately = null;
+
+        /// <summary>
+        /// Interval between ticks
+        /// </summary>
+        public float? interval = null;
+
+        /// <summary>
+        /// The description of this particualr timer effect
+        /// </summary>
+        /// <remarks>
+        /// If not specified, the API will use <see cref="TimerDescription"/>
+        /// </remarks>
+        public string? timerDescription = null;
+
+        /// <summary>
+        /// Determines if the previous boss must be killed before this one
+        /// </summary>
+        public bool? defeatIfPreviousNotDefeated = null;
+
+        public BossRoundInfo() { }
+    }
+
+    /// <summary>
+    /// Informations about the boss on the round
+    /// </summary>
+    public abstract Dictionary<int, BossRoundInfo> RoundsInfo { get; }
+
+    /// <summary>
+    /// Modifies the boss before it is spawned, based on the round
+    /// </summary>
+    /// <param name="bloon"></param>
+    /// <param name="round"></param>
+    /// <returns></returns>
+    public virtual BloonModel ModifyForRound(BloonModel bloon, int round) => bloon;
+
+    public static float SpeedToSpeedFrames(float speed) => speed * 0.416667f / 25;
+
+    /// <summary>
+    /// The rounds the boss should spawn on
+    /// </summary>
+    public IEnumerable<int> SpawnRounds => RoundsInfo.Keys;
+
+    /// <summary>
+    /// Gets the tier of the given boss
+    /// </summary>
+    /// <param name="boss"></param>
+    /// <returns>Tier of the boss or null if the boss's tier wasn't specified or the boss isn't registered</returns>
+    public static uint? GetTier(Bloon boss) => BossesAlive.ContainsKey(boss.Id) ? BossesAlive[boss.Id].RoundInfo.tier : null;
+    #endregion
+
+    #region Skulls
+    /// <summary>
+    /// The description of the skull effect (only used by the Boss API)
+    /// </summary>
+    public virtual string SkullDescription => "???";
+
+    /// <summary>
+    /// Checks if the boss has any skull on any round
+    /// </summary>
+    public bool UsesSkulls => RoundsInfo.Any(info => info.Value.skullCount > 0);
+
+    /// <summary>
+    /// Called when the boss hits a skull
+    /// </summary>
+    /// <param name="boss"></param>
+    public virtual void SkullEffect(Bloon boss) { }
+
+    /// <summary>
+    /// Called when the boss should get a skull remove
+    /// </summary>
+    /// <param name="boss"></param>
+    public virtual void SkullEffectUI(Bloon boss)
+    {
+        if (BossesAlive[boss.Id].Skulls.Count != 0)
+            BossesAlive[boss.Id].Skulls.First(img => img != null).DeleteObject();
+    }
+    #endregion
+
+    #region Timer
+    /// <summary>
+    /// The description of the timer effect (only used by the Boss API)
+    /// </summary>
+    public virtual string TimerDescription => "???";
+
+    public virtual uint? Interval => null;
+
+    /// <summary>
+    /// Checks if the boss uses a timer on any round
+    /// </summary>
+    public bool UsesTimer => RoundsInfo.Any(info => info.Value.interval != null) || Interval != null;
+
+    /// <summary>
+    /// Called when the boss timer ticks
+    /// </summary>
+    /// <param name="boss"></param>
+    public virtual void TimerTick(Bloon boss) { }
+    #endregion
+
+    #region UIs
+    const uint maxLines = 3;
+
+    public struct BossUI
+    {
+        public ModBoss Boss;
+        public BossRoundInfo RoundInfo;
+        public ModHelperPanel Panel;
+        public Image HpBar;
+        public ModHelperText HpText;
+        public ModHelperButton Icon;
+        public List<ModHelperImage> Skulls;
+    }
+
+    /// <summary>
+    /// The people who worked/helped to create the mod, but aren't the authors
+    /// </summary>
+    public virtual string? ExtraCredits { get; }
 
     /// <summary>
     /// Defines if the boss is using the default waiting UI
@@ -292,7 +451,7 @@ public abstract class ModBoss : ModBloon
         panel.transform.SetAsFirstSibling();
 
         // HP Text
-        var hpText = panel.AddText(new Info("HealthText", 0, 120, 2000, FontMedium), $"{boss.bloonModel.maxHealth} / {boss.bloonModel.maxHealth}", FontMedium, Il2CppTMPro.TextAlignmentOptions.MidlineRight);
+        var hpText = panel.AddText(new Info("HealthText", 0, 120, 2000, BossIntegration.FontMedium), $"{boss.bloonModel.maxHealth} / {boss.bloonModel.maxHealth}", BossIntegration.FontMedium, Il2CppTMPro.TextAlignmentOptions.MidlineRight);
         hpText.Text.enableAutoSizing = true;
 
         ui.HpText = hpText;
@@ -378,164 +537,6 @@ public abstract class ModBoss : ModBloon
         return panel;
     }
 
-    /// <summary>
-    /// Whether the boss should always cause defeat on leak
-    /// </summary>
-    public virtual bool AlwaysDefeatOnLeak => true;
-
-    /// <summary>
-    /// Whether the boss should block rounds from spawning, behaving like a normal bloon
-    /// </summary>
-    public virtual bool BlockRounds => false;
-
-    /// <summary>
-    /// The rounds the boss should spawn on
-    /// </summary>
-    public IEnumerable<int> SpawnRounds => RoundsInfo.Keys;
-
-    /// <summary>
-    /// Modifies the boss before it is spawned, based on the round
-    /// </summary>
-    /// <param name="bloon"></param>
-    /// <param name="round"></param>
-    /// <returns></returns>
-    public virtual BloonModel ModifyForRound(BloonModel bloon, int round) => bloon;
-
-    /// <summary>
-    /// Informations about the boss on the round
-    /// </summary>
-    public abstract Dictionary<int, BossRoundInfo> RoundsInfo { get; }
-
-    /// <summary>
-    /// All the informations a boss holds for a specific round
-    /// </summary>
-    public struct BossRoundInfo
-    {
-        /// <summary>
-        /// Tier of the boss on this round
-        /// </summary>
-        public uint? tier = null;
-
-        /// <summary>
-        /// Amount of skulls the boss has
-        /// </summary>
-        public uint? skullCount = null;
-
-        /// <summary>
-        /// Positions of the skulls
-        /// </summary>
-        /// <remarks>
-        /// If not specified, the skulls' position will be placed evenly (3 skulls => 0.75, 0.5, 0.25)
-        /// </remarks>
-        public float[]? percentageValues = null;
-
-        /// <summary>
-        /// The description of this particular skull effect
-        /// </summary>
-        /// <remarks>
-        /// If not specified, the API will use <see cref="SkullDescription"/>
-        /// </remarks>
-        public string? skullDescription = null;
-
-        /// <summary>
-        /// Determines if the boss's health should go down while it's skull effect is on
-        /// </summary>
-        public bool? preventFallThrough = null;
-
-        /// <summary>
-        /// Determines if the timer starts immediately
-        /// </summary>
-        public bool? triggerImmediately = null;
-
-        /// <summary>
-        /// Interval between ticks
-        /// </summary>
-        public float? interval = null;
-
-        /// <summary>
-        /// The description of this particualr timer effect
-        /// </summary>
-        /// <remarks>
-        /// If not specified, the API will use <see cref="TimerDescription"/>
-        /// </remarks>
-        public string? timerDescription = null;
-
-        /// <summary>
-        /// Determines if the previous boss must be killed before this one
-        /// </summary>
-        public bool? defeatIfPreviousNotDefeated = null;
-
-        public BossRoundInfo() { }
-    }
-
-    /// <summary>
-    /// Gets the tier of the given boss
-    /// </summary>
-    /// <param name="boss"></param>
-    /// <returns>Tier of the boss or null if the boss's tier wasn't specified or the boss isn't registered</returns>
-    public static uint? GetTier(Bloon boss) => BossesAlive.ContainsKey(boss.Id) ? BossesAlive[boss.Id].RoundInfo.tier : null;
-
-    #region Skulls
-    /// <summary>
-    /// The description of the skull effect (only used by the Boss API)
-    /// </summary>
-    public virtual string SkullDescription => "???";
-
-    /// <summary>
-    /// Checks if the boss has any skull on any round
-    /// </summary>
-    public bool UsesSkulls => RoundsInfo.Any(info => info.Value.skullCount > 0);
-
-    /// <summary>
-    /// Called when the boss hits a skull
-    /// </summary>
-    /// <param name="boss"></param>
-    public virtual void SkullEffect(Bloon boss)
-    {
-        if (BossesAlive[boss.Id].Skulls.Count != 0)
-            BossesAlive[boss.Id].Skulls.First(img => img != null).DeleteObject();
-    }
-    #endregion
-
-    #region Timer
-    /// <summary>
-    /// The description of the timer effect (only used by the Boss API)
-    /// </summary>
-    public virtual string TimerDescription => "???";
-
-    public virtual uint? Interval => null;
-
-    /// <summary>
-    /// Checks if the boss uses a timer on any round
-    /// </summary>
-    public bool UsesTimer => RoundsInfo.Any(info => info.Value.interval != null) || Interval != null;
-
-    /// <summary>
-    /// Called when the boss timer ticks
-    /// </summary>
-    /// <param name="boss"></param>
-    public virtual void TimerTick(Bloon boss) { }
-    #endregion
-
-    /// <inheritdoc/>
-    public override void ModifyBaseBloonModel(BloonModel bloonModel)
-    {
-        bloonModel.RemoveAllChildren();
-        bloonModel.danger = 16;
-        bloonModel.overlayClass = BloonOverlayClass.Dreadbloon;
-        bloonModel.bloonProperties = BloonProperties.None;
-        bloonModel.tags = new Il2CppStringArray(new[] { "Bad", "Moabs", "Boss" });
-        bloonModel.maxHealth = Health;
-        bloonModel.speed = Speed;
-        bloonModel.isBoss = true;
-
-        if (!bloonModel.HasBehavior<HealthPercentTriggerModel>())
-        {
-            bloonModel.AddBehavior(new HealthPercentTriggerModel(Name + "-SkullEffect", false, new float[] { }, new string[] { Name + "SkullEffect" }, false));
-        }
-
-        Cache[bloonModel.name] = this;
-    }
 
     internal static void ResetUIs()
     {
@@ -547,11 +548,7 @@ public abstract class ModBoss : ModBloon
         ModBoss.BossesAlive = new();
     }
 
-    public virtual void OnBossesRemoved() { }
-
-    public static float SpeedToSpeedFrames(float speed) => speed * 0.416667f / 25;
-
-    private void RemoveUI(Bloon bloon)
+    internal void RemoveUI(Bloon bloon)
     {
         if (!BossesAlive.ContainsKey(bloon.Id))
             return;
@@ -579,6 +576,32 @@ public abstract class ModBoss : ModBloon
 
         BossesAlive.Remove(bloon.Id);
     }
+    #endregion
+
+    #region Base
+    /// <inheritdoc />
+    public sealed override string BaseBloon => BloonType.Bad;
+
+    /// <inheritdoc/>
+    public override void ModifyBaseBloonModel(BloonModel bloonModel)
+    {
+        bloonModel.RemoveAllChildren();
+        bloonModel.danger = 16;
+        bloonModel.overlayClass = BloonOverlayClass.Dreadbloon;
+        bloonModel.bloonProperties = BloonProperties.None;
+        bloonModel.tags = new Il2CppStringArray(new[] { "Bad", "Moabs", "Boss" });
+        bloonModel.maxHealth = Health;
+        bloonModel.speed = Speed;
+        bloonModel.isBoss = true;
+
+        if (!bloonModel.HasBehavior<HealthPercentTriggerModel>())
+        {
+            bloonModel.AddBehavior(new HealthPercentTriggerModel(Name + "-SkullEffect", false, new float[] { }, new string[] { Name + "SkullEffect" }, false));
+        }
+
+        Cache[bloonModel.name] = this;
+    }
+
 
     /// <inheritdoc />
     public override void Register()
@@ -596,4 +619,5 @@ public abstract class ModBoss : ModBloon
     public sealed override string RegrowsTo => "";
     /// <inheritdoc />
     public sealed override float RegrowRate => 3;
+    #endregion
 }

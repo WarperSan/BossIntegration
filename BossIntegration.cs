@@ -40,6 +40,13 @@ public class BossIntegration : BloonsTD6Mod
         icon = VanillaSprites.FasterBossIcon,
     };
 
+    public static readonly ModSettingBool FormatBossHP = new(false)
+    {
+        description = "If toggled, the bosses HP will be format to make it easier to read.\n\nWarning: this process will make the game slower because of the calculations.",
+        category = General,
+        icon = VanillaSprites.LivesIcon,
+    };
+
     public override void OnInGameLoaded(InGame inGame)
     {
         if (ModBoss.Cache.Count > 0)

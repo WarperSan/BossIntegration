@@ -11,7 +11,10 @@ internal static class HealthPercentage_Trigger
     {
         if (ModBoss.Cache.ContainsKey(__instance.bloon.bloonModel.name))
         {
-            ModBoss.Cache[__instance.bloon.bloonModel.name].SkullEffect(__instance.bloon);
+            ModBoss boss = ModBoss.Cache[__instance.bloon.bloonModel.name];
+
+            boss.SkullEffectUI(__instance.bloon);
+            boss.SkullEffect(__instance.bloon);
         }
     }
 }

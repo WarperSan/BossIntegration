@@ -12,7 +12,7 @@ internal class Bloon_Degrade
         try
         {
             if (ModBoss.Cache.TryGetValue(__instance.bloonModel.name, out var value))
-                value.OnPop(__instance);
+                value.OnPopMandatory(__instance);
         }
         catch (System.Exception e)
         {

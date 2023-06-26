@@ -20,7 +20,7 @@ internal class Bloon_Damage
     {
         if (ModBoss.Cache.TryGetValue(__instance.bloonModel.id, out var boss))
         {
-            boss.OnDamage(__instance, totalAmount);
+            boss.OnDamageMandatory(__instance, totalAmount);
         }
     }
 }
