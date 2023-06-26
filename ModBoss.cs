@@ -13,6 +13,7 @@ using Il2CppAssets.Scripts;
 using Il2CppAssets.Scripts.Models.Bloons;
 using Il2CppAssets.Scripts.Models.Bloons.Behaviors;
 using Il2CppAssets.Scripts.Simulation.Bloons;
+using Il2CppAssets.Scripts.Unity.UI_New;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Newtonsoft.Json.Linq;
@@ -196,7 +197,7 @@ public abstract class ModBoss : ModBloon
 
             if (ui.HpText != default(ModHelperText))
             {
-                ui.HpText.SetText($"{Mathf.FloorToInt(bloon.health)} / {bloon.bloonModel.maxHealth}");
+                SetHP(Mathf.FloorToInt(bloon.health), bloon.bloonModel.maxHealth, ui.HpText);
             }
         }
 
@@ -451,8 +452,9 @@ public abstract class ModBoss : ModBloon
         panel.transform.SetAsFirstSibling();
 
         // HP Text
-        var hpText = panel.AddText(new Info("HealthText", 0, 120, 2000, BossIntegration.FontMedium), $"{boss.bloonModel.maxHealth} / {boss.bloonModel.maxHealth}", BossIntegration.FontMedium, Il2CppTMPro.TextAlignmentOptions.MidlineRight);
+        var hpText = panel.AddText(new Info("HealthText", 0, 120, 2000, BossIntegration.FontMedium), "", BossIntegration.FontMedium, Il2CppTMPro.TextAlignmentOptions.MidlineRight);
         hpText.Text.enableAutoSizing = true;
+        SetHP(boss.bloonModel.maxHealth, boss.bloonModel.maxHealth, hpText);
 
         ui.HpText = hpText;
 
@@ -537,6 +539,12 @@ public abstract class ModBoss : ModBloon
         return panel;
     }
 
+    internal void SetHP(float health, float maxHealth, ModHelperText hpText)
+    {
+        hpText.SetText((bool)BossIntegration.FormatBossHP.GetValue()
+            ? $"{BossesMenu.FormatNumber(health)} / {BossesMenu.FormatNumber(maxHealth)}"
+            : $"{health} / {maxHealth}");
+    }
 
     internal static void ResetUIs()
     {

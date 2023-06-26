@@ -437,7 +437,7 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
 
 
     private static readonly string[] NumSuffixs = new string[] { "K", "M", "B", "T", "q", "Q", "s", "S", "O", "N", "d", "U", "D", "!", "@", "#", "$", "%", "^", "&", "*", "[", "]", "{", "}", ";" };
-    private static string FormatNumber(double number)
+    internal static string FormatNumber(double number)
     {
         var result = number.ToString().Split(',')[0];
 
@@ -461,6 +461,6 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
             rest = rest.Substring(0, rest.Length - 1);
         }
 
-        return result.Substring(0, commaPos) + (rest.Length == 0 ? "" : ",") + rest + NumSuffixs[index];
+        return result.Substring(0, commaPos) + (rest.Length == 0 ? "" : ",") + rest + (index >= NumSuffixs.Length ? "?" : NumSuffixs[index]);
     }
 }

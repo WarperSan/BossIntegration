@@ -25,6 +25,9 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
     const int maxBoss = 8;
     const int maxRounds = 12;
 
+    const float tableWidth = maxRounds * (size + spacing); // (rounds.Length > maxRounds - 1 ? maxRounds : rounds.Length + 1) * (size + spacing);
+    const float tableHeight = maxBoss * (size + spacing); // (ModBoss.Cache.Count > maxBoss - 1 ? maxBoss : ModBoss.Cache.Count + 1) * (size + spacing);
+
     public static string Path => ModHelper.ModHelperDirectory + "\\Mod Settings\\BossesSetting.json";
 
     static GameObject? canvas;
@@ -66,9 +69,6 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
     private static void Init(GameObject canvas)
     {
         int[] rounds = CompileAllRounds();
-
-        float tableWidth = maxRounds * (size + spacing); // (rounds.Length > maxRounds - 1 ? maxRounds : rounds.Length + 1) * (size + spacing);
-        float tableHeight = maxBoss * (size + spacing); // (ModBoss.Cache.Count > maxBoss - 1 ? maxBoss : ModBoss.Cache.Count + 1) * (size + spacing);
 
         canvas.AddModHelperPanel(new Info("TableBG", 0, (maxBoss * (size + spacing) - tableHeight) / 2, tableWidth, tableHeight), VanillaSprites.MainBGPanelBlueNotchesShadow);
         var table = canvas.AddModHelperScrollPanel(new Info("Table", 0, (maxBoss * (size + spacing) - tableHeight) / 2, tableWidth - spacing / 2, tableHeight - spacing / 2), RectTransform.Axis.Horizontal, VanillaSprites.PanelEmpty);
@@ -169,10 +169,15 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
         var bossScrollPanel = canvas.AddModHelperScrollPanel(new Info("BossesScrollPanel",
             table.RectTransform.localPosition.x - (maxBoss - 1) * (size + spacing) - spacing,
             table.RectTransform.localPosition.y,
-            350, table.RectTransform.sizeDelta.y), RectTransform.Axis.Vertical, VanillaSprites.MainBGPanelGrey);
+            350, tableHeight - spacing / 2), RectTransform.Axis.Horizontal, VanillaSprites.MainBGPanelGrey);
+
+        bossScrollPanel.ScrollContent.gameObject.RemoveComponent<VerticalLayoutGroup>();
         bossScrollPanel.ScrollRect.enabled = false;
-        var bossPanel = bossScrollPanel.AddPanel(new Info("BossPanel", 150, table.ScrollContent.RectTransform.sizeDelta.y), null);
+        var bossPanel = bossScrollPanel.AddPanel(new Info("BossPanel", 150, ModBoss.Cache.Count * (size + 2 * spacing)), null);
+        bossScrollPanel.ScrollContent.RemoveComponent<ContentSizeFitter>();
+
         bossScrollPanel.AddScrollContent(bossPanel);
+        bossScrollPanel.ScrollContent.RectTransform.sizeDelta = new Vector2(bossPanel.RectTransform.sizeDelta.x, bossPanel.RectTransform.sizeDelta.y / 2);
 
         List<ModBoss> bosses = ModBoss.Cache.Values.ToList();
 
@@ -181,9 +186,7 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
             ModBoss boss = bosses[i];
             float yPosition = (bosses.Count / 2 - i) * (size + spacing * 2) - size / 2;
 
-            ModHelperPanel btnPanel = bossPanel.AddPanel(new Info("BtnPanel" + boss.Name, 0, yPosition, 200), null);
-
-            ModHelperButton b = btnPanel.AddButton(new Info("BossLabel" + boss.Name, 150), GetTextureGUID(boss.mod, boss.Icon), new Action(() =>
+            ModHelperButton b = bossPanel.AddButton(new Info("BossLabel" + boss.Name, 0, yPosition, 150), GetTextureGUID(boss.mod, boss.Icon), new Action(() =>
             {
                 bool? result = null;
 
@@ -282,7 +285,7 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
     {
         return new Vector3(
                 horizontal ? target.RectTransform.position.x + source.ScrollRect.content.position.x - source.ScrollRect.rectTransform.position.x : target.ScrollRect.content.position.x,
-                vertical ? target.RectTransform.position.y + source.ScrollRect.content.position.y - source.ScrollRect.rectTransform.position.y - size - spacing * 2 : target.ScrollRect.content.position.y,
+                vertical ? target.RectTransform.position.y + source.ScrollRect.content.position.y - source.ScrollRect.rectTransform.position.y : target.ScrollRect.content.position.y,
                 0);
     }
 }
