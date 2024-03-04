@@ -598,7 +598,7 @@ public abstract class ModBoss : ModBloon
         bloonModel.overlayClass = BloonOverlayClass.Dreadbloon;
         bloonModel.bloonProperties = BloonProperties.None;
         bloonModel.tags = new Il2CppStringArray(new[] { "Bad", "Moabs", "Boss" });
-        bloonModel.maxHealth = Health;
+        bloonModel.maxHealth = (int)Health;
         bloonModel.speed = Speed;
         bloonModel.isBoss = true;
 
