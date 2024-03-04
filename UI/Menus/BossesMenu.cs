@@ -310,15 +310,15 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
         {
             roundDropdown = roundPanel.AddDropdown(new Info("RoundDropdown", 575, 0, 500f, ModNameHeight), rounds,
                 ModNameHeight * 4,
-                new Action<int>((r) =>
+                new Action<int>(r =>
                 {
                     if (roundDropdown != null)
-                        UpdateRoundInfos(int.Parse(roundDropdown.Dropdown.options[r].text.ToString()));
+                    UpdateRoundInfos(int.Parse(roundDropdown.Dropdown.options.ToList()[r].text.ToString()));
                 }), VanillaSprites.BlueInsertPanelRound, FontSmall
             );
 
             if (rounds.Count > 0)
-                UpdateRoundInfos(int.Parse(rounds[0]));
+                UpdateRoundInfos(int.Parse(rounds.First()));
         }
 
         bossPanel.SetActive(true);
