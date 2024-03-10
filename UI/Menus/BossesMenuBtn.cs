@@ -1,112 +1,86 @@
 ﻿using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Components;
-using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Unity.UI_New;
-using Il2CppAssets.Scripts.Utils;
 using System;
-using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
-namespace BossIntegration.UI;
+namespace BossIntegration.UI.Menus;
 
 internal class BossesMenuBtn
 {
-    private static SpriteReference Sprite => ModContent.GetSpriteReference<BossIntegration>("Icon");
-
-    private static readonly string[] ShowOnMenus =
-    {
-        "MapSelectUI"
-    };
-
-    private const float AnimatorSpeed = .75f;
-    private const int AnimationTicks = (int)(10 / AnimatorSpeed);
+    private const string BUTTON_SPRITE_NAME = "Icon";
+    private const string PARENT_NAME = "Friends";
+    private const string BUTTON_NAME = "BossIntegration-BossButton";
 
     private static ModHelperPanel? buttonPanel;
-    private static ModHelperButton? bossesBtn;
 
-    internal static void OnMenuChanged(string currentMenu, string newMenu)
+    internal static void OnMenuChanged()
     {
-        if (ModBoss.Cache.Count == 0) return;
+        if (!ModBoss.HasBosses)
+            return;
 
-        if (ShowOnMenus.Contains(newMenu))
-        {
-            if (!ShowOnMenus.Contains(currentMenu))
-            {
-                Show();
-            }
-        }
+        if (buttonPanel != null)
+            return;
 
-        if (!ShowOnMenus.Contains(newMenu))
-        {
-            Hide();
-        }
+        Init();
     }
+
+    #region UI
 
     private static void Init()
     {
-        var foregroundScreen = CommonForegroundScreen.instance.transform;
-        //var backgroundScreen = CommonBackgroundScreen.instance.transform;
-        var roundSetChanger = foregroundScreen.FindChild("BottomButtonPanel");
-        if (roundSetChanger == null)
+        Transform foregroundScreen = CommonForegroundScreen.instance.transform;
+        Transform roundSetChanger = foregroundScreen.FindChild(PARENT_NAME);
+
+        if (roundSetChanger == null || !ModBoss.HasBosses)
+            return;
+
+        if (roundSetChanger.Find(BUTTON_NAME) == null)
+            CreatePanel(roundSetChanger.gameObject);
+
+        if (roundSetChanger.GetComponent<VerticalLayoutGroup>() == null)
         {
-            CreatePanel(foregroundScreen.gameObject);
+            VerticalLayoutGroup group = roundSetChanger.gameObject.AddComponent<VerticalLayoutGroup>();
+            group.childControlHeight = false;
+            group.childControlWidth = false;
+            group.spacing = 100;
         }
-        //button.SetActive(true/*ModBoss.Cache.Count > 0*/);
     }
 
     private static void CreatePanel(GameObject screen)
     {
-        buttonPanel = screen.AddModHelperPanel(new Info("BottomButtonPanel")
+        buttonPanel = screen.AddModHelperPanel(new Info(BUTTON_NAME)
         {
-            Anchor = new Vector2(1, 0),
-            Pivot = new Vector2(1, 0)
+            SizeDelta = new Vector2(220, 220),
+            Pivot = new Vector2(1, 0),
+            AnchorMax = new Vector2(0.5f, 0.5f),
+            AnchorMin = Vector2.zero
         });
-
-        var animator = buttonPanel.AddComponent<Animator>();
-        animator.runtimeAnimatorController = Animations.PopupAnim;
-        animator.speed = AnimatorSpeed;
-        buttonPanel.GetComponent<Animator>().Play("PopupSlideIn");
 
         Create(buttonPanel);
     }
 
-    private static void Show()
+    private static void Create(ModHelperPanel panel)
     {
-        Init();
-        RevealButton();
-    }
-    private static void Hide()
-    {
-        HideButton();
-    }
+        ModHelperButton bossesBtn = panel.AddButton(
+            new Info("BossMenuBtn", 0, 0, 220, 220),
+            ModContent.GetSpriteReference<BossIntegration>(BUTTON_SPRITE_NAME).GUID,
+            new Action(() => ModGameMenu.Open<BossesMenu2>()));
 
-    private static void RevealButton()
-    {
-        if (buttonPanel != null)
-        {
-            buttonPanel.SetActive(true);
-            buttonPanel.GetComponent<Animator>().Play("PopupSlideIn");
-        }
-    }
+        var count = ModBoss.Count.ToString();
+        var text = "Boss";
 
-    private static void HideButton()
-    {
-        if (bossesBtn is null)
-            return;
+        // Make it plurial
+        if (ModBoss.Count > 1)
+            text += "es";
 
-        if (buttonPanel != null)
-        {
-            buttonPanel.GetComponent<Animator>().Play("PopupSlideOut");
-            TaskScheduler.ScheduleTask(() => buttonPanel.SetActive(false), ScheduleType.WaitForFrames, AnimationTicks);
-        }
+        //if (count.Length < 3)
+        //    text += $" ({count})";
+
+        _ = bossesBtn.AddText(new Info("Text", 0, -120, 500, 100), text, 60f);
     }
 
-    public static void Create(ModHelperPanel panel)
-    {
-        bossesBtn = panel.AddButton(new Info("BossMenuBtn", -750, 50, 350, 350, new Vector2(1, 0), new Vector2(0.5f, 0)), Sprite.GUID,
-            new Action(() => ModGameMenu.Open<BossesMenu>()));
-
-        bossesBtn.AddText(new Info("Text", 0, -175, 500, 100), $"   Boss{(ModBoss.Cache.Count > 1 ? "es" : "")} ({ModBoss.Cache.Count})", 60f);
-    }
+    #endregion
 }

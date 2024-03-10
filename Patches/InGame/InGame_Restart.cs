@@ -8,9 +8,9 @@ internal class InGame_Restart
     [HarmonyPostfix]
     internal static void Postfix()
     {
-        if (ModBoss.Cache.Count > 0)
-        {
-            ModBossUI.Init();
-        }
+        if (!ModBoss.HasBosses)
+            return;
+
+        ModBossUI.Init();
     }
 }

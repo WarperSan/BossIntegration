@@ -1,58 +1,80 @@
-﻿using BTD_Mod_Helper;
-using BTD_Mod_Helper.Api;
-using BTD_Mod_Helper.Api.Components;
+﻿using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Extensions;
-using Il2Cpp;
+using Il2CppAssets.Scripts.Simulation.Bloons;
+using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
+using Il2CppNinjaKiwi.Common;
 using Il2CppSystem.Linq;
-using Il2CppTMPro;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using Image = UnityEngine.UI.Image;
+using static BossIntegration.ModBoss;
 
 namespace BossIntegration.UI;
 
 internal class ModBossUI
 {
-    public static ModHelperPanel? MainPanel { get; set; }
-    public static ModHelperPanel? WaitPanel { get; set; }
-    private static ModHelperPanel? IconsHolder { get; set; }
-    internal static List<ModHelperPanel> WaitingPanels = new List<ModHelperPanel>();
+    private const int MAX_LINES = 3;
 
-    public static Dictionary<int, List<ModBoss>>? Rounds { get; set; }
+    private static ModHelperPanel? MainPanel { get; set; }
+
+    private static ModHelperPanel? WaitHolder { get; set; }
+
+    private static Dictionary<int, List<ModBoss>>? Rounds = null;
 
     internal static void Init()
     {
+        MainPanel_Init();
+        Rounds_Init();
+        WaitPanels_Init();
+    }
+
+    #region Initialization
+
+    private static void MainPanel_Init()
+    {
+        // If the parent exists, reset everything
         if (MainPanel != null)
         {
             MainPanel.DeleteObject();
-
-            foreach (var item in ModBoss.BossesAlive.Values)
-            {
-                if (item.Icon != null)
-                {
-                    InGameButtonsHolder.RemoveButton(item.Icon);
-                    item.Icon.DeleteObject();
-                }
-            }
-            InGameButtonsHolder.ResetIcons();
-            ModBoss.ResetUIs();
+            WaitHolder = null;
+            ModBoss.ClearBosses();
         }
 
-        MainPanel = InGame.instance.mapRect.gameObject.AddModHelperPanel(new Info("BossUIPanel",
-            -400, -150, 800, 600, new Vector2(0.65f, .85f), new Vector2(.5f, .5f)),
-            /*VanillaSprites.BrownInsertPanel*/null);
-        MainPanel.AddComponent<ContentSizeFitter>();
+        // Create parent
+        MainPanel = InGame.instance.mapRect.gameObject.AddModHelperPanel(
+            new Info("BossUIPanel",
+                -400, -25,
+                800, 600,
+                new Vector2(0.65f, .85f),
+                new Vector2(.5f, .5f)),
+            null);
+        _ = MainPanel.AddComponent<ContentSizeFitter>();
+
         VerticalLayoutGroup mainPanelVLG = MainPanel.AddComponent<VerticalLayoutGroup>();
         mainPanelVLG.spacing = 300;
         mainPanelVLG.childControlHeight = false;
 
+        // Prevent the UIs to catch raycasts
+        CanvasGroup cg = MainPanel.AddComponent<CanvasGroup>();
+        cg.blocksRaycasts = false;
+
+        // Place the UIs under every other UIs
+        MainPanel.transform.SetAsFirstSibling();
+    }
+
+    private static void Rounds_Init()
+    {
+        // Skip if already initialized
+        if (Rounds != null)
+            return;
+
+        // Get every boss for every round
         Rounds = new Dictionary<int, List<ModBoss>>();
 
-        foreach (var boss in ModBoss.Cache.Values)
+        foreach (ModBoss boss in ModBoss.GetBosses())
         {
             foreach (var round in boss.SpawnRounds)
             {
@@ -61,164 +83,134 @@ internal class ModBossUI
                 Rounds[round].Add(boss);
             }
         }
-        UpdateWaitPanel(InGame.Bridge.GetCurrentRound());
     }
 
-    public static ModHelperPanel AddWaitPanel(ModHelperPanel holderPanel)
+    private static void WaitPanels_Init()
     {
-        var waitPanelHolder = holderPanel.AddPanel(new Info("WaitPanelHolder", 0, -50, 1100, 175));
-        waitPanelHolder.RectTransform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
-        WaitingPanels.Add(waitPanelHolder);
+        if (MainPanel == null)
+            return;
 
-        var panel = waitPanelHolder.AddPanel(new Info("WaitPanel", 0, -50, 1100, 175), VanillaSprites.SmallSquareWhite);
-
-        var color = new Color(0, 0, 0, 0.314f);
-        panel.GetComponent<Image>().color = color;
-        panel.GetComponent<Image>().m_Color = color;
-
-        panel.AddText(new Info("Title", 550, 5, 750, 255, new Vector2(.1f, .5f)), " appears in 888 rounds.");
-        panel.transform.FindChild("Title").GetComponent<NK_TextMeshProUGUI>().alignment = TextAlignmentOptions.Left;
-
-        return panel;
-    }
-
-    private static void DeleteWaitingPanels()
-    {
-        for (int i = WaitingPanels.Count - 1; i >= 0; i--)
+        // Create parent if doesn't exist
+        if (WaitHolder == null)
         {
-            if (WaitingPanels[i] != null)
-                WaitingPanels[i].DeleteObject();
+            WaitHolder = MainPanel.AddPanel(new Info("WaitHolder"));
+            VerticalLayoutGroup vlg = WaitHolder.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing = 25;
         }
-        WaitingPanels.Clear();
+
+        // Update the waiting panels
+        UpdateWaitPanels();
+    }
+
+    #endregion
+
+    #region Update
+
+    public static void Update()
+    {
+        UpdateWaitPanels();
+        UpdateHealthPanels();
     }
 
     /// <summary>
     /// Updates the Wait Panel
     /// </summary>
-    /// <param name="currentRound"></param>
-    public static void UpdateWaitPanel(int currentRound)
+    private static void UpdateWaitPanels(int? currentRound = null)
     {
-        DeleteWaitingPanels();
+        // If the parent is not set, skip
+        if (WaitHolder == null)
+            return;
 
-        int closest = int.MaxValue;
-        bool changed = false;
+        // Destroy all children
+        WaitHolder.transform.DestroyAllChildren();
 
+        // If the rounds are not set, skip
         if (Rounds == null)
             return;
 
-        foreach (var item in Rounds)
+        // If not round given, set to the current round
+        if (!currentRound.HasValue)
+            currentRound = InGame.Bridge.GetCurrentRound() + 1;
+
+        // Find the closest round
+        var closestRound = int.MaxValue;
+        var hasChanged = false;
+
+        foreach ((var round, List<ModBoss> b) in Rounds)
         {
-            if (item.Key <= currentRound || !item.Value.Any(boss => ModBoss.GetPermission(boss, item.Key)))
+            if (round <= currentRound || !b.Any(boss => ModBoss.GetPermission(boss, round)))
                 continue;
 
-            if (item.Key - currentRound < closest)
-            {
-                closest = item.Key - currentRound;
-                changed = true;
-            }
+            if (round - currentRound >= closestRound)
+                continue;
+
+            closestRound = round - currentRound.Value;
+            hasChanged = true;
         }
 
-        if (!changed)
+        // If all rounds have passed, skip
+        if (!hasChanged)
             return;
 
-        List<ModBoss> nearBosses = Rounds[closest + currentRound];
+        // Get all bosses of round
+        var key = closestRound + currentRound.Value;
+        List<ModBoss> bosses = Rounds[key];
 
-        nearBosses.RemoveAll(boss => !ModBoss.GetPermission(boss, closest + currentRound));
+        // Remove all the bosses that can't spawn
+        _ = bosses.RemoveAll(boss => !ModBoss.GetPermission(boss, key));
 
-        int count = 2;
+        var uiAmount = MAX_LINES;
 
-        if (nearBosses.Any(boss => boss.UsingDefaultWaitingUi))
+        // If any boss uses the default waiting UI
+        if (bosses.Any(boss => boss.UsingDefaultWaitingUi))
         {
-            CreateDefaultWaitingPanel(nearBosses, closest);
-            count--;
+            _ = DefaultWaitUI.Create(
+                WaitHolder,
+                bosses.Where(b => b.UsingDefaultWaitingUi).ToArray(),
+                closestRound);
+            uiAmount--;
         }
 
-        List<ModBoss> customUiBosses = nearBosses.FindAll(boss => !boss.UsingDefaultWaitingUi);
+        // Find all the bosses that use a custom UI
+        List<ModBoss> customUiBosses = bosses.FindAll(boss => !boss.UsingDefaultWaitingUi);
 
-        if (customUiBosses.Count < count)
-            count = customUiBosses.Count;
+        // Take the lowest number of UI
+        uiAmount = Mathf.Min(uiAmount, customUiBosses.Count);
 
-        for (int i = 0; i < count; i++)
-        {
-            try
-            {
-                if (MainPanel != null)
-                    customUiBosses[i].AddWaitPanel(MainPanel);
-            }
-            catch (System.Exception e)
-            {
-                ModHelper.Msg<BossIntegration>(e.Message);
-            }
-        }
+        // Add every waiting panels
+        for (var i = 0; i < uiAmount; i++)
+            customUiBosses[i].AddWaitPanel(WaitHolder);
     }
 
-    /// <summary>
-    /// Puts the given objects in a circular layout. If the list has 1 or 2 items, the layout is hardcoded;
-    /// </summary>
-    /// <param name="center"></param>
-    /// <param name="objects"></param>
-    /// <param name="radius"></param>
-    private static void SetCircular(Vector2 center, List<GameObject> objects, float radius)
+    private static void UpdateHealthPanels()
     {
-        switch (objects.Count)
-        {
-            case 1:
-                objects[0].transform.localPosition = center;
-                break;
-            case 2:
-                objects[0].transform.localPosition = new Vector2(0.5f, 0.5f) * radius;
-                objects[1].transform.localPosition = new Vector2(-0.5f, -0.5f) * radius;
-                break;
-            default:
-                for (var pointNum = 0; pointNum < objects.Count; pointNum++)
-                {
-                    var i = pointNum * 1f / objects.Count;
-                    var angle = i * Mathf.PI * 2;
-                    var x = Mathf.Sin(angle);
-                    var y = Mathf.Cos(angle);
-                    objects[pointNum].transform.localPosition = new Vector2(x, y) * radius + center;
-                }
-                break;
-        }
+        var copy = ModBoss.BossesAlive.Keys.ToList();
+        foreach (BloonToSimulation? item in InGame.instance.GetAllBloonToSim())
+            _ = copy.Remove(item.GetBloon().Id);
+
+        foreach (Il2CppAssets.Scripts.ObjectId item in copy)
+            ModBoss.RemoveUI(item);
     }
 
-    private static void CreateDefaultWaitingPanel(List<ModBoss> nearBosses, int inRounds)
-    {
-        List<GameObject> objs = new List<GameObject>();
+    public static bool HasHealthPanel(ModBoss boss)
+        => MainPanel != null && MainPanel.transform.Find(GetHealthKey(boss)) == null;
 
+    #endregion
+
+    public static void AddHealthPanel(ModBoss boss, Bloon bloon, ref BossUI ui, int round)
+    {
         if (MainPanel == null)
             return;
 
-        WaitPanel = AddWaitPanel(MainPanel);
-        WaitPanel.TranslateScaled(new Vector3(75, 50));
+        ModHelperPanel? panel = boss.AddBossPanel(MainPanel, bloon, ref ui, round);
 
-        IconsHolder = WaitPanel.AddPanel(new Info("IconsHolder"), null);
-        IconsHolder.transform.localPosition = new Vector2(-WaitPanel.RectTransform.sizeDelta.x / 2 * 0.85f, 0);
+        if (panel == null)
+            return;
 
-        List<ModBoss> defaultUiBosses = nearBosses.FindAll(boss => boss.UsingDefaultWaitingUi);
-        int count = 0;
-        foreach (var boss in defaultUiBosses)
-        {
-            if (count >= 5)
-                continue;
+        ui.Panel = panel;
 
-            count++;
-            objs.Add(IconsHolder.AddImage(new Info(boss.Name + "-Icon", 0, 0, 200, new Vector2(.1f, .5f)), ModContent.GetSprite(boss.mod, boss.Icon)).gameObject);
-        }
-        SetCircular(Vector2.zero, objs, 100);
-
-        NK_TextMeshProUGUI textDisplay = WaitPanel.transform.GetComponentInChildren<NK_TextMeshProUGUI>();
-
-        if (defaultUiBosses.Count == 1)
-            textDisplay.text = defaultUiBosses[0].DisplayName + " appears";
-        else if (defaultUiBosses.Count == 2)
-            textDisplay.text = defaultUiBosses[0].DisplayName + " & " + defaultUiBosses[1].DisplayName + " appear";
-        else
-            textDisplay.text = $"A float of {defaultUiBosses.Count} bosses appears";
-
-        if (inRounds == 1)
-            textDisplay.text += $" next round";
-        else
-            textDisplay.text += $" in {inRounds} rounds";
+        panel.gameObject.name = GetHealthKey(boss);
     }
+
+    private static string? GetHealthKey(ModBoss boss) => boss.GetType().FullName;
 }

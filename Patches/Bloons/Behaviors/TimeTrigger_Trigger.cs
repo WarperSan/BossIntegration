@@ -1,8 +1,7 @@
-﻿using BTD_Mod_Helper;
-using HarmonyLib;
+﻿using HarmonyLib;
 using Il2CppAssets.Scripts.Simulation.Bloons.Behaviors;
 
-namespace BossIntegration;
+namespace BossIntegration.Patches.Bloons.Behaviors;
 
 [HarmonyPatch(typeof(TimeTrigger), nameof(TimeTrigger.Trigger))]
 internal static class TimeTrigger_Trigger
@@ -10,9 +9,9 @@ internal static class TimeTrigger_Trigger
     [HarmonyPrefix]
     private static void Prefix(TimeTrigger __instance)
     {
-        if (ModBoss.BossesAlive.ContainsKey(__instance.bloon.Id))
-        {
-            ModBoss.Cache[__instance.bloon.bloonModel.name].TimerTick(__instance.bloon);
-        }
+        if (!ModBoss.IsAliveBoss(__instance.bloon, out ModBoss? boss) || boss == null)
+            return;
+
+        boss.TimerTick(__instance.bloon);
     }
 }

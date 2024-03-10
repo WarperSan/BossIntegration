@@ -11,12 +11,9 @@ internal class DefeatScreen_Awake
     [HarmonyPostfix]
     internal static void Postfix(DefeatScreen __instance)
     {
-        __instance.retryLastRoundButton.onClick.AddListener(new Action(() =>
-        {
-            if (ModBoss.Cache.Count > 0)
-            {
-                ModBossUI.Init();
-            }
-        }));
+        if (!ModBoss.HasBosses)
+            return;
+
+        __instance.retryLastRoundButton.onClick.AddListener(new Action(ModBossUI.Init));
     }
 }

@@ -20,5 +20,6 @@
 
     <ItemGroup>
       <None Remove="Icon.png" />
+      <None Remove="Resources\noa_grey_.png" />
     </ItemGroup>
 </Project>

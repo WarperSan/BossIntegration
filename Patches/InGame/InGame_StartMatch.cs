@@ -8,11 +8,9 @@ internal class InGame_StartMatch
     [HarmonyPostfix]
     internal static void Postfix()
     {
-        InGameButtonsHolder.Init();
-
-        if (ModBoss.Cache.Count > 0)
-        {
-            ModBossUI.Init();
-        }
+        if (!ModBoss.HasBosses)
+            return;
+     
+        ModBossUI.Init();
     }
 }

@@ -26,7 +26,6 @@ public class BossIntegration : BloonsTD6Mod
 
     public static readonly int ModIconSize = 250;
 
-
     private static readonly ModSettingCategory General = new("General")
     {
         collapsed = false,
@@ -49,9 +48,9 @@ public class BossIntegration : BloonsTD6Mod
 
     public override void OnInGameLoaded(InGame inGame)
     {
-        if (ModBoss.Cache.Count > 0)
-        {
-            ModBossUI.Init();
-        }
+        if (!ModBoss.HasBosses)
+            return;
+
+        ModBossUI.Init();
     }
 }
