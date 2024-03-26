@@ -8,6 +8,7 @@
         <LangVersion>latest</LangVersion>
         <Optimize>False</Optimize>
         <DebugType>embedded</DebugType>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
       <LangVersion>preview</LangVersion>
@@ -19,6 +20,8 @@
     <Import Project="..\btd6.targets" />
 
     <ItemGroup>
+      <None Remove="BossAPIButton.png" />
+      <None Remove="BossButton.png" />
       <None Remove="Icon.png" />
       <None Remove="Resources\noa_grey_.png" />
     </ItemGroup>

@@ -1,405 +1,604 @@
-﻿using BTD_Mod_Helper.Api;
+﻿using BossIntegration.Boss;
+using BTD_Mod_Helper;
+using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Extensions;
 using Il2Cpp;
+using Il2CppAssets.Scripts.Models.Bloons;
 using Il2CppAssets.Scripts.Unity;
-using Il2CppAssets.Scripts.Unity.Menu;
 using Il2CppAssets.Scripts.Unity.UI_New.ChallengeEditor;
 using Il2CppAssets.Scripts.Unity.UI_New.Popups;
 using Il2CppNinjaKiwi.Common;
-using Il2CppSystem.Collections.Generic;
-using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using static BossIntegration.BossIntegration;
+using static Il2CppTMPro.TMP_Dropdown;
 
 namespace BossIntegration.UI.Menus;
 
 internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
 {
-    private static ModHelperText? authorsLabel;
-    private static ModHelperText? displayNameLabel;
-    private static ModHelperText? systemNameLabel;
-    private static ModHelperText? extraCreditLabel;
-    private static ModHelperText? descriptionLabel;
-    private static ModHelperScrollPanel? descriptionPanel;
-    private static ModHelperDropdown? roundDropdown;
-    private static ModHelperPanel? roundPanel;
-    private static ModHelperText? speedLabel;
-    private static ModHelperText? healthLabel;
-    private static ModHelperText? skullLabel;
-    private static ModHelperText? timerLabel;
-    private static ModHelperScrollPanel? modifPanel;
-    private static ModBoss? Boss;
-    private static bool firstBoss = true;
-    private const string InfoIcon = VanillaSprites.InfoBtn2;
-    private const int modifiersIconHeight = 150;
+    private static Dictionary<float, string>? bloonsPerSpeed = null;
+
+    private ModBoss? currentBoss;
+    private int? currentRound;
 
     /// <inheritdoc/>
     public override bool OnMenuOpened(Il2CppSystem.Object data)
     {
+        this.currentBoss = null;
+        this.currentRound = null;
+
+        // Get bloons per speed
+        if (bloonsPerSpeed == null)
+        {
+            var bloons = Game.instance.model.bloons
+                    .Where(b => b.GetModBloon() == null)
+                    .Where(b => b.IsBase)
+                    .Where(b => !b.isBoss)
+                    .ToList();
+
+            bloons.Sort((b1, b2) => b1.speed.CompareTo(b2.speed));
+
+            bloonsPerSpeed = new Dictionary<float, string>();
+
+            foreach (BloonModel? item in bloons)
+            {
+                if (bloonsPerSpeed.ContainsKey(item.speed))
+                    continue;
+
+                bloonsPerSpeed.Add(item.speed, item.name);
+            }
+        }
+
         this.CommonForegroundHeader.SetText("Bosses");
 
         RectTransform panelTransform = this.GameMenu.gameObject.GetComponentInChildrenByName<RectTransform>("Panel");
         GameObject panel = panelTransform.gameObject;
         panel.DestroyAllChildren();
 
-        ModHelperPanel bossMenu = panel.AddModHelperPanel(new Info("ModsMenu", 3600, 1900), null);
-        CreateLeftMenu(bossMenu);
-        CreateRightMenu(bossMenu);
+        var bosses = Boss.Cache.GetBosses().ToList();
+        bosses.Sort((b1, b2) => b1.DisplayName.CompareTo(b2.DisplayName));
+
+        this.UI(panel, 50, bosses);
+
+        this.SelectBoss(bosses.ElementAt(0));
 
         return false;
     }
 
-    /// <inheritdoc/>
-    public override void OnMenuClosed()
+    #region Fields
+
+    private ModHelperImage? bossInfo_Icon;
+    private ModHelperText? bossInfo_Name;
+    private ModHelperText? bossInfo_Author;
+    private ModHelperDropdown? bossInfo_Rounds;
+
+    private ModHelperText? bossInfo_Description;
+
+    private (ModHelperPanel panel, ModHelperText text)? bossInfo_ExtraCredits;
+
+    private ModHelperText? bossInfo_IsActive;
+    private ModHelperText? bossInfo_Speed;
+    private ModHelperText? bossInfo_Health;
+    private ModHelperText? bossInfo_Skull;
+    private ModHelperText? bossInfo_Timer;
+
+    private (ModHelperPanel panel, ModHelperScrollPanel content)? bossInfo_Properties;
+
+    #endregion
+
+    #region Components
+
+    private void UI(GameObject parent, float fontSize, IEnumerable<ModBoss> bosses)
     {
-        base.OnMenuClosed();
-        firstBoss = true;
+        ModHelperPanel panel = parent.AddModHelperPanel(new Info("BossPanel")
+        {
+            AnchorMinX = 0.1f,
+            AnchorMaxX = 0.9f,
+            AnchorMinY = 0.05f,
+            AnchorMaxY = 1f
+        });
+
+        _ = panel.AddPanel(new Info("BG")
+        {
+            AnchorMin = Vector2.zero,
+            AnchorMax = Vector2.one
+        }, VanillaSprites.MainBGPanelBlue);
+
+        this.Bosses(panel, bosses);
+
+        ModHelperPanel bossInfo = panel.AddPanel(new Info("BossInfo")
+        {
+            AnchorMinX = 0.03f,
+            AnchorMaxX = 0.97f,
+            AnchorMinY = 0.03f,
+            AnchorMaxY = 0.97f,
+        });
+
+        this.Header(bossInfo);
+        this.Content(bossInfo, fontSize);
+
+        this.SelectBoss(bosses.ElementAt(0));
     }
 
-    private static ModHelperPanel? bossPanel;
-
-    private static void CreateLeftMenu(ModHelperPanel bossMenu)
+    private void Bosses(ModHelperPanel parent, IEnumerable<ModBoss> bosses)
     {
-        var Padding = 50;
+        const float bossSpacing = 50;
+        const float bossSize = 200;
 
-        ModHelperPanel leftMenu = bossMenu.AddPanel(
-            new Info("LeftMenu", (MenuWidth - 1750) / -2f, 0, 1750, MenuHeight),
-            VanillaSprites.MainBGPanelBlue, RectTransform.Axis.Vertical, Padding, Padding
-        );
-
-        ModHelperScrollPanel bossList = leftMenu.AddScrollPanel(new Info("BossListScroll", InfoPreset.Flex), RectTransform.Axis.Vertical,
-        VanillaSprites.BlueInsertPanelRound, Padding, Padding);
-
-        foreach (ModBoss item in ModBoss.GetBosses())
+        ModHelperScrollPanel bossListSP = parent.AddScrollPanel(new Info("List")
         {
-            bossList.AddScrollContent(CreateItem(item));
-        }
+            AnchorMinX = 0.98f,
+            AnchorMaxX = 1.1f,
+            AnchorMinY = 0.05f,
+            AnchorMaxY = 0.95f,
+        }, RectTransform.Axis.Vertical, VanillaSprites.MainBGPanelGrey, 0, Mathf.FloorToInt(bossSize / 4));
 
-        ModHelperScrollPanel settingsPanel = leftMenu.AddScrollPanel(new Info("SettingsScroll", leftMenu.RectTransform.sizeDelta.x, 150), RectTransform.Axis.Horizontal, null, Padding, Padding);
-        _ = settingsPanel.AddButton(new Info("BossSetupBtn", 150), VanillaSprites.SettingsBtn, new Action(() =>
+        bossListSP.transform.SetAsFirstSibling();
+
+        ModHelperPanel bossPanel = bossListSP.ScrollContent.AddPanel(new Info("Panel")
+        {
+            Height = (bosses.Count() * bossSize) + ((bosses.Count() - 1) * bossSpacing),
+            Width = bossSize,
+        });
+        VerticalLayoutGroup bossVLG = bossPanel.AddComponent<VerticalLayoutGroup>();
+        bossVLG.childAlignment = TextAnchor.MiddleCenter;
+        bossVLG.spacing = bossSpacing;
+
+        foreach (ModBoss boss in bosses)
+        {
+            if (!boss.GetSpawnRounds().Any())
+                continue;
+
+            ModBoss b = boss;
+
+            _ = bossPanel.AddButton(new Info(boss.Name)
+            {
+                Size = bossSize
+            }, boss.IconReference.GUID, new System.Action(() => this.SelectBoss(b)));
+        }
+    }
+
+    private void Header(ModHelperPanel parent)
+    {
+        ModHelperPanel panel = parent.AddPanel(new Info("BossHeader")
+        {
+            AnchorMinX = 0.0f,
+            AnchorMaxX = 1.0f,
+            AnchorMinY = 0.8f,
+            AnchorMaxY = 1.0f,
+        });
+        HorizontalLayoutGroup bossHeaderHLG = panel.AddComponent<HorizontalLayoutGroup>();
+        bossHeaderHLG.childAlignment = TextAnchor.MiddleLeft;
+
+        this.Icon(panel);
+        this.Labels(panel);
+        this.Rounds(panel);
+    }
+    private void Icon(ModHelperPanel parent) => this.bossInfo_Icon = parent
+            .AddPanel(new Info("Icon") { Flex = 1 })
+            .AddImage(new Info("Image")
+            {
+                Size = 300,
+            }, default(string));
+    private void Labels(ModHelperPanel parent)
+    {
+        ModHelperPanel panel = parent.AddPanel(new Info("Labels") { Flex = 6 });
+        VerticalLayoutGroup bossLabelsVLG = panel.AddComponent<VerticalLayoutGroup>();
+        bossLabelsVLG.childAlignment = TextAnchor.LowerLeft;
+
+        // Name
+        this.bossInfo_Name = panel.AddText(new Info("Name"), "NUH UH", 90, Il2CppTMPro.TextAlignmentOptions.BottomLeft);
+
+        // Author
+        this.bossInfo_Author = panel.AddText(new Info("Author"), "From: NUH UH", 45, Il2CppTMPro.TextAlignmentOptions.Left);
+    }
+    private void Rounds(ModHelperPanel parent)
+    {
+        ModHelperPanel panel = parent.AddPanel(new Info("Rounds") { Flex = 1 });
+        VerticalLayoutGroup roundsVLG = panel.AddComponent<VerticalLayoutGroup>();
+        roundsVLG.childForceExpandHeight = false;
+
+        // Label
+        ModHelperPanel roundLabelPanel = panel.AddPanel(new Info("Label")
+        {
+            AnchorMinX = 0f,
+            AnchorMaxX = 1f,
+            Height = 150,
+        });
+
+        var onRoundIconClicked = new System.Action(() =>
         {
             Open<BossesSettings>();
-        }));
-
-    }
-
-    private static void CreateRightMenu(ModHelperPanel bossMenu)
-    {
-        ModHelperPanel rightPanel = bossMenu.AddPanel(
-            new Info("RightMenu", (MenuWidth - 1750) / 2f, 0, 1750, MenuHeight),
-            VanillaSprites.MainBGPanelBlue, RectTransform.Axis.Vertical, Padding, Padding
-        );
-
-        rightPanel.SetActive(false);
-
-        ModHelperPanel topPanel = rightPanel.AddPanel(new Info("TopPanel")
-        {
-            Height = ModNameHeight * 2,
-            FlexWidth = 1
-        }, null, RectTransform.Axis.Horizontal);
-
-        _ = topPanel.AddImage(new Info("Icon")
-        {
-            Size = ModNameHeight * 2
-        }, new Sprite());
-
-        ModHelperPanel namesPanel = topPanel.AddPanel(new Info("NamesPanel", InfoPreset.Flex)
-        {
-            Y = -ModNameHeight * 2,
         });
 
-        displayNameLabel = namesPanel.AddText(new Info("DisplayName", ModNameWidth, ModNameHeight), "DisplayName", FontLarge * 1.5f);
-        displayNameLabel.Text.fontSizeMax = FontLarge * 1.5f;
-        displayNameLabel.Text.enableAutoSizing = true;
+        _ = roundLabelPanel.AddButton(new Info("Icon")
+        {
+            Size = 100,
+            Anchor = new Vector2(0.92f, 0.50f)
+        }, VanillaSprites.InfoBtn2, onRoundIconClicked);
+        ;
 
-        systemNameLabel = namesPanel.AddText(new Info("SystemName", 0, -FontLarge * 1.5f, ModNameWidth, ModNameHeight), "SystemName", FontSmall);
-        systemNameLabel.Text.fontSizeMax = FontSmall;
-        systemNameLabel.Text.enableAutoSizing = true;
+        _ = roundLabelPanel.AddText(new Info("Text")
+        {
+            AnchorMinX = 0f,
+            AnchorMinY = 0f,
+            AnchorMaxX = 0.9f,
+            AnchorMaxY = 1f,
+        }, "Rounds", 69);
 
-        //isCamoIcon = iconsPanel.AddImage(new Info("CamoIcon", ModNameHeight) { X = -Padding * 1.5f }, VanillaSprites.CamoBloonsIcon);
-        //isFortifiedIcon = iconsPanel.AddImage(new Info("FortifiedIcon", ModNameHeight) { X = ModNameHeight - Padding * 1.5f }, VanillaSprites.FortifiedBloonsIcon);
+        // Dropdown
+        var rounds = new Il2CppSystem.Collections.Generic.List<string>();
+        rounds.Add("TEMP1");
+        rounds.Add("TEMP1");
+        rounds.Add("TEMP1");
 
-        // Authors
-        authorsLabel = rightPanel.AddText(new Info("Authors", ModNameWidth, ModNameHeight / 3), "Authors: ", FontSmall, Il2CppTMPro.TextAlignmentOptions.Left);
-        authorsLabel.Text.enableAutoSizing = true;
+        var onValueChanged = new System.Action<int>(r =>
+        {
+            if (this.bossInfo_Rounds == null)
+                return;
 
-        extraCreditLabel = rightPanel.AddText(new Info("ExtraCredits", ModNameWidth, ModNameHeight / 3), "Extra Credits: ", FontSmall, Il2CppTMPro.TextAlignmentOptions.Left);
-        extraCreditLabel.Text.enableAutoSizing = true;
+            if (!int.TryParse(this.bossInfo_Rounds.Dropdown.options[r].text, out var index))
+                return;
 
-        descriptionPanel = rightPanel.AddScrollPanel(new Info("DescriptionPanel", InfoPreset.FillParent)
+            this.SelectRound(index);
+        });
+
+        this.bossInfo_Rounds = panel.AddDropdown(new Info("Rounds")
+        {
+            Width = 400,
+            Height = 150
+        }, rounds, 150 * 4, onValueChanged, VanillaSprites.BlueInsertPanelRound);
+    }
+
+    private void Content(ModHelperPanel parent, float fontSize)
+    {
+        ModHelperPanel bossContent = parent.AddPanel(new Info("BossContent")
+        {
+            AnchorMinX = 0.0f,
+            AnchorMaxX = 1.0f,
+            AnchorMinY = 0.0f,
+            AnchorMaxY = 0.77f,
+        });
+
+        this.Content_One(bossContent, fontSize);
+        this.Content_Two(bossContent);
+    }
+
+    private void Content_One(ModHelperPanel parent, float fontSize)
+    {
+        ModHelperPanel content = parent.AddPanel(new Info("Content1")
+        {
+            AnchorMinX = 0.0f,
+            AnchorMaxX = 0.35f,
+            AnchorMinY = 0.0f,
+            AnchorMaxY = 1.0f,
+        });
+        VerticalLayoutGroup contentVLG = content.AddComponent<VerticalLayoutGroup>();
+        contentVLG.childAlignment = TextAnchor.UpperLeft;
+        contentVLG.childForceExpandHeight = false;
+        contentVLG.spacing = 10;
+
+        this.Description(content, fontSize);
+        this.ExtraCredits(content, fontSize);
+    }
+    private void Description(ModHelperPanel parent, float fontSize)
+    {
+        // Label "Description"
+        _ = parent.AddText(new Info("Description-Label")
+        {
+            Height = fontSize
+        }, "Description:", fontSize, Il2CppTMPro.TextAlignmentOptions.Left);
+
+        // Description
+        ModHelperScrollPanel scrollPanel = parent.AddScrollPanel(new Info("DescriptionPanel", InfoPreset.FillParent)
         {
             FlexWidth = 1,
-            Height = (FontSmall * 4) + (Padding * 2),
-        }, RectTransform.Axis.Vertical, VanillaSprites.BlueInsertPanelRound, Padding, Padding);
+            FlexHeight = 1
+        }, RectTransform.Axis.Vertical, VanillaSprites.BlueInsertPanelRound, 50, 25);
 
-        descriptionLabel = descriptionPanel.AddText(new Info("Description", ModNameWidth, ModNameHeight)
+        this.bossInfo_Description = scrollPanel.AddText(new Info("Description")
         {
+            Width = 1000,
+            Height = 1000,
             Flex = 1
-        }, "", FontSmall, Il2CppTMPro.TextAlignmentOptions.MidlineLeft);
-        descriptionLabel.Text.enableAutoSizing = true;
+        }, "No description provided", fontSize * 1.5f, Il2CppTMPro.TextAlignmentOptions.TopLeft);
+        // this.bossInfo_Description.Text.overflowMode = Il2CppTMPro.TextOverflowModes.Overflow;
 
-        descriptionPanel.AddScrollContent(descriptionLabel);
+        scrollPanel.AddScrollContent(this.bossInfo_Description);
 
-        //roundPanel = rightPanel.AddPanel(new Info("RoundsPanel", rightPanel.RectTransform.sizeDelta.x - Padding * 2, 150));
-        //roundPanel.AddText(new Info("RoundsLabel", 0, 0, 500, roundPanel.RectTransform.sizeDelta.y), "Rounds:", FontMedium, Il2CppTMPro.TextAlignmentOptions.Right);
+    }
+    private void ExtraCredits(ModHelperPanel parent, float fontSize)
+    {
+        ModHelperPanel panel = parent.AddPanel(new Info("ExtraCredits")
+        {
+            Height = (fontSize * 2) + (50 * 2) + fontSize,
+            AnchorMinX = 0.1f,
+            AnchorMaxX = 0.9f,
+        });
+        _ = panel.AddComponent<VerticalLayoutGroup>();
 
-        ModHelperScrollPanel mainPanel = rightPanel.AddScrollPanel(new Info("MainPanel", InfoPreset.Flex), RectTransform.Axis.Vertical, VanillaSprites.BlueInsertPanelRound, Padding, Padding);
-        var mainPanelWidth = rightPanel.RectTransform.sizeDelta.x - (4 * Padding);
-        VerticalLayoutGroup mainPanelVLG = mainPanel.ScrollContent.GetComponent<VerticalLayoutGroup>();
-        mainPanelVLG.childAlignment = TextAnchor.MiddleLeft;
-        mainPanelVLG.childControlHeight = false;
+        _ = panel.AddText(new Info("ExtraCredits-Label")
+        {
+            Height = fontSize,
+            AnchorMinX = 0,
+            AnchorMaxX = 1,
+        }, "Extra Credits:", fontSize, Il2CppTMPro.TextAlignmentOptions.Left);
 
-        ModHelperPanel roundModifPanel = rightPanel.AddPanel(new Info("RoundModifPanel", rightPanel.RectTransform.sizeDelta.x - (Padding * 2), modifiersIconHeight));
+        // Extra credits
+        ModHelperScrollPanel scrollPanel = panel.AddScrollPanel(new Info("ExtraCreditsPanel")
+        {
+            AnchorMinX = 0,
+            AnchorMaxX = 1,
+            Height = (fontSize * 2) + (50 * 2),
+        }, RectTransform.Axis.Vertical, VanillaSprites.BlueInsertPanelRound, 50, 25);
 
-        roundPanel = roundModifPanel.AddPanel(new Info("RoundsPanel", 0, 150)
+        this.bossInfo_ExtraCredits = (panel, scrollPanel.ScrollContent.AddText(new Info("ExtraCredits")
+        {
+            Width = 1000,
+            Height = 150,
+            Flex = 1,
+        }, "No extra credit provided", fontSize, Il2CppTMPro.TextAlignmentOptions.MidlineLeft));
+    }
+
+    private void Content_Two(ModHelperPanel parent)
+    {
+        ModHelperPanel content = parent.AddPanel(new Info("Content2")
+        {
+            AnchorMinX = 0.4f,
+            AnchorMaxX = 1.0f,
+            AnchorMinY = 0.0f,
+            AnchorMaxY = 1.0f,
+        });
+        VerticalLayoutGroup contentVLG = content.AddComponent<VerticalLayoutGroup>();
+        contentVLG.childAlignment = TextAnchor.UpperLeft;
+        contentVLG.childForceExpandHeight = false;
+
+        this.Stats(content, 69);
+    }
+    private void Stats(ModHelperPanel parent, float fontSize)
+    {
+        // Label "Stats"
+        _ = parent.AddText(new Info("Stats-Label")
+        {
+            Height = 50
+        }, "Stats:", 50, Il2CppTMPro.TextAlignmentOptions.Left);
+
+        _ = parent.AddPanel(new Info("Spacing", 10));
+
+        ModHelperScrollPanel statsSP = parent.AddScrollPanel(new Info("Stats")
         {
             FlexWidth = 1,
-        });
-        _ = roundPanel.AddText(new Info("RoundsLabel", 0, 0, 500, roundPanel.RectTransform.sizeDelta.y), "Rounds:", FontMedium, Il2CppTMPro.TextAlignmentOptions.Right);
+            FlexHeight = 1
+        }, RectTransform.Axis.Vertical, VanillaSprites.BlueInsertPanelRound, 0, 30);
+        statsSP.ScrollContent.LayoutGroup.spacing = 30;
 
-        //modifPanel = rightPanel.AddScrollPanel(new Info("ModifPanel", rightPanel.RectTransform.sizeDelta.x - Padding * 2, 150), RectTransform.Axis.Horizontal, VanillaSprites.BlueInsertPanelRound, Padding, Padding);
-        modifPanel = roundModifPanel.AddScrollPanel(new Info("ModifPanel", 0, 0, 750, modifiersIconHeight), RectTransform.Axis.Horizontal, VanillaSprites.BlueInsertPanelRound, Padding, Padding);
-        modifPanel.RectTransform.localPosition = new Vector3((-roundModifPanel.RectTransform.sizeDelta.x / 2) + (modifPanel.RectTransform.sizeDelta.x / 2), 0);
-
-        // Stats
-        // Speed
-        ModHelperPanel speedPanel = mainPanel.AddPanel(new Info("SpeedPanel", mainPanelWidth, ModNameHeight));
-        mainPanel.AddScrollContent(speedPanel);
-        _ = speedPanel.AddComponent<HorizontalLayoutGroup>();
-
-        speedLabel = speedPanel.AddText(new Info("SpeedLabel", speedPanel.RectTransform.sizeDelta.x - ModNameHeight, ModNameHeight), "Speed:", FontMedium, Il2CppTMPro.TextAlignmentOptions.Left);
-
-        if (!(bool)ShowBossSpeedAsPercentage.GetValue())
-        {
-            _ = speedPanel.AddButton(new Info("SpeedInfo", ModNameHeight, ModNameHeight), InfoIcon,
-            new Action(() =>
-            {
-                PopupScreen.instance.SafelyQueue(screen => screen.ShowOkPopup("For reference, a BAD has a speed of 4.5 while a red bloon has a speed of 25."));
-            }));
-        }
-
-        // Health
-        ModHelperPanel healthPanel = mainPanel.AddPanel(new Info("HealthPanel", mainPanelWidth, ModNameHeight));
-        mainPanel.AddScrollContent(healthPanel);
-        _ = healthPanel.AddComponent<HorizontalLayoutGroup>();
-
-        healthLabel = healthPanel.AddText(new Info("HealthLabel", healthPanel.RectTransform.sizeDelta.x - ModNameHeight, ModNameHeight)
-        {
-            Flex = 1
-        }, "Health:", FontMedium, Il2CppTMPro.TextAlignmentOptions.Left);
-        _ = healthPanel.AddButton(new Info("HealthInfo", ModNameHeight, ModNameHeight), InfoIcon,
-            new Action(() =>
-            {
-                PopupScreen.instance.SafelyQueue(screen => screen.ShowOkPopup("For reference, a BAD has 20k health while a DDT has 400 health."));
-            }));
-
-        // Skull
-        skullLabel = mainPanel.AddText(new Info("SkullLabel", ModNameWidth, ModNameHeight)
-        {
-            Flex = 1
-        }, "Skull (#):", FontMedium, Il2CppTMPro.TextAlignmentOptions.Left);
-        mainPanel.AddScrollContent(skullLabel);
-        skullLabel.Text.overflowMode = Il2CppTMPro.TextOverflowModes.Overflow;
-
-        // Timer
-        timerLabel = mainPanel.AddText(new Info("TimerLabel", ModNameWidth, ModNameHeight)
-        {
-            Flex = 1
-        }, "Timer (Xs):", FontMedium, Il2CppTMPro.TextAlignmentOptions.Left);
-        timerLabel.Text.overflowMode = Il2CppTMPro.TextOverflowModes.Overflow;
-        mainPanel.AddScrollContent(timerLabel);
-
-        bossPanel = rightPanel;
+        this.IsActive(statsSP.ScrollContent, fontSize);
+        this.Speed(statsSP.ScrollContent, fontSize);
+        this.Health(statsSP.ScrollContent, fontSize);
+        this.Properties(statsSP.ScrollContent, fontSize);
+        this.Skulls(statsSP.ScrollContent, fontSize);
+        this.Timer(statsSP.ScrollContent, fontSize);
     }
-
-    private static ModHelperComponent CreateItem(ModBoss boss)
+    private void IsActive(ModHelperPanel parent, float fontSize) => this.bossInfo_IsActive = parent.AddText(new Info("Active")
     {
-        var mod = ModHelperPanel.Create(new Info(boss.Name)
+        Height = fontSize,
+        FlexWidth = 1,
+    }, "Is Active: NUH UH", fontSize, Il2CppTMPro.TextAlignmentOptions.TopLeft);
+    private void Speed(ModHelperPanel parent, float fontSize) => this.bossInfo_Speed = parent.AddText(new Info("Speed")
+    {
+        Height = fontSize,
+        FlexWidth = 1,
+    }, "speed: NaN", fontSize, Il2CppTMPro.TextAlignmentOptions.TopLeft);
+    private void Health(ModHelperPanel parent, float fontSize) => this.bossInfo_Health = parent.AddText(new Info("Health")
+    {
+        Height = fontSize,
+        FlexWidth = 1,
+    }, "Health: NaN", fontSize, Il2CppTMPro.TextAlignmentOptions.TopLeft);
+    private void Properties(ModHelperPanel parent, float fontSize)
+    {
+        const float spacing = 20;
+        const float height = 200;
+
+        // Panel
+        ModHelperPanel panel = parent.AddPanel(new Info("Properties")
         {
-            Height = 200,
+            Height = height + fontSize + spacing,
             FlexWidth = 1
         });
+        VerticalLayoutGroup propertiesVLG = panel.AddComponent<VerticalLayoutGroup>();
+        propertiesVLG.childAlignment = TextAnchor.UpperLeft;
+        propertiesVLG.childForceExpandHeight = false;
+        propertiesVLG.spacing = spacing;
 
-        ModHelperButton panel = mod.AddButton(new Info("MainBtn", InfoPreset.FillParent), VanillaSprites.MainBGPanelBlueNotches,
-            new Action(() =>
-            {
-                Boss = boss;
-                LoadBossInfo(boss);
-                MenuManager.instance.buttonClick2Sound.Play("ClickSounds");
-            }));
+        // Text
+        _ = panel.AddText(new Info("Text")
+        {
+            Height = fontSize,
+        }, "Properties:", fontSize, Il2CppTMPro.TextAlignmentOptions.TopLeft);
 
-        _ = panel.AddImage(new Info("Icon", Padding * 2, 0, ModIconSize, new Vector2(0, 0.5f)), GetTextureGUID(boss.mod, boss.Icon));
+        // List
+        ModHelperPanel propertiesListPanel = panel.AddPanel(new Info("List")
+        {
+            AnchorMinX = 0,
+            AnchorMaxX = 0.5f,
+        }, VanillaSprites.PanelFrame);
+        HorizontalLayoutGroup pLPHLG = propertiesListPanel.AddComponent<HorizontalLayoutGroup>();
+        pLPHLG.childForceExpandWidth = false;
 
-        _ = panel.AddText(new Info("Name", ModNameWidth, ModNameHeight), boss.DisplayName,
-            FontMedium);
+        // Scroll Panel
+        this.bossInfo_Properties = (panel, propertiesListPanel.AddScrollPanel(new Info("ScrollPanel")
+        {
+            Height = height,
+            Width = 200 * 4
+        }, RectTransform.Axis.Horizontal, VanillaSprites.BlueInsertPanel));
+    }
+    private void Skulls(ModHelperPanel parent, float fontSize)
+    {
+        this.bossInfo_Skull = parent.AddText(new Info("Skull")
+        {
+            Height = fontSize,
+            FlexWidth = 1,
+        }, "Skull (NaN): NUH UH", fontSize, Il2CppTMPro.TextAlignmentOptions.TopLeft);
+    }
+    private void Timer(ModHelperPanel parent, float fontSize) => this.bossInfo_Timer = parent.AddText(new Info("Timer")
+    {
+        Height = fontSize,
+        FlexWidth = 1,
+    }, "Timer (NaN): NUH UH", fontSize, Il2CppTMPro.TextAlignmentOptions.TopLeft);
 
-        return mod;
+    #endregion
+
+    #region Update UI
+
+    private void SelectBoss(ModBoss boss)
+    {
+        this.currentBoss = boss;
+
+        this.bossInfo_Icon?.Image.SetSprite(boss.IconReference);
+        this.CommonForegroundHeader.SetText(boss.DisplayName);
+        this.bossInfo_Name?.SetText(boss.DisplayName);
+        this.bossInfo_Author?.SetText("Added by: " + boss.mod.GetModName());
+
+        this.UpdateRound(boss);
+        this.UpdateExtraCredits(boss);
+
+        this.bossInfo_Description?.SetText(boss.Description);
     }
 
-    private static void LoadBossInfo(ModBoss boss)
+    private void SelectRound(int round)
     {
-        if (bossPanel == null)
+        this.currentRound = round;
+
+        if (this.currentBoss == null)
             return;
 
-        Sprite sprite = GetSprite(boss.mod, boss.Icon);
-        Transform icon = bossPanel.transform.FindChildWithName("Icon");
+        BloonModel model = Game.instance.model.GetBloon(this.currentBoss.Id).Duplicate();
+        this.currentBoss.ModifyForRound(model, this.currentRound.Value);
 
-        if (sprite != null)
-            icon.GetComponent<Image>().sprite = sprite;
+        this.bossInfo_IsActive?.SetText("Is Active: " + this.currentBoss.GetPermission(round));
+        this.UpdateSpeed(model);
+        this.bossInfo_Health?.SetText("Health: " + ((float)model.maxHealth).Format().ToString());
 
-        displayNameLabel?.SetText(boss.DisplayName);
-
-        if (systemNameLabel != null)
+        // Properties
+        if (this.bossInfo_Properties.HasValue)
         {
-            systemNameLabel.SetText(boss.ToString());
-            systemNameLabel.SetActive(false);
+            var propertiesCount = this.UpdateProperties(this.bossInfo_Properties.Value.content, model);
+            this.bossInfo_Properties.Value.panel.SetActive(propertiesCount > 0);
         }
 
-        // Icons
-        //iconsPanel.Background.enabled = boss.bloonModel.isCamo || boss.bloonModel.isFortified;
-        //isCamoIcon.SetActive(boss.bloonModel.isCamo);
-        //isFortifiedIcon.SetActive(boss.bloonModel.isFortified);
+        // BossRoundInfo
+        BossRoundInfo infos = this.currentBoss.RoundsInfo[round];
+        this.bossInfo_Skull?.SetText($"Skull ({infos.skullCount}): {infos.skullDescription ?? this.currentBoss.SkullDescription}");
+        this.bossInfo_Skull?.SetActive(infos.skullCount.HasValue);
 
-        // Authors
-        authorsLabel?.SetText($"Author(s): {boss.mod.Info.Author}");
-
-        if (extraCreditLabel != null)
-        {
-            extraCreditLabel.SetActive(!string.IsNullOrEmpty(boss.ExtraCredits));
-            extraCreditLabel.SetText("Extra credits: " + boss.ExtraCredits);
-        }
-
-        descriptionPanel?.SetActive($"Default description for {boss.Name}" != boss.Description);
-
-        descriptionLabel?.SetText(boss.Description);
-
-        var rounds = new List<string>();
-        foreach (var item in boss.SpawnRounds)
-        {
-            rounds.Add(item.ToString());
-        }
-
-        if (roundDropdown != null)
-            roundDropdown.DeleteObject();
-
-        if (roundPanel != null)
-        {
-            roundDropdown = roundPanel.AddDropdown(new Info("RoundDropdown", 575, 0, 500f, ModNameHeight), rounds,
-                ModNameHeight * 4,
-                new Action<int>(r =>
-                {
-                    if (roundDropdown != null)
-                        UpdateRoundInfos(int.Parse(roundDropdown.Dropdown.options.ToList()[r].text.ToString()));
-                }), VanillaSprites.BlueInsertPanelRound, FontSmall
-            );
-
-            if (rounds.Count > 0)
-                UpdateRoundInfos(int.Parse(rounds.First()));
-        }
-
-        bossPanel.SetActive(true);
+        this.bossInfo_Timer?.SetText($"Timer ({infos.interval}s): {infos.timerDescription ?? this.currentBoss.TimerDescription}");
+        this.bossInfo_Timer?.SetActive(infos.interval.HasValue);
     }
 
-    private static void UpdateRoundInfos(int round)
+    private void UpdateRound(ModBoss boss)
     {
-        if (Boss == null)
+        if (this.bossInfo_Rounds == null)
             return;
 
-        Il2CppAssets.Scripts.Models.Bloons.BloonModel copy = Boss.ModifyForRound(Game.instance.model.GetBloon(Boss.Id).Duplicate(), round);
+        var index = -1;
 
-        speedLabel?.SetText($"Speed: {((bool)ShowBossSpeedAsPercentage.GetValue() ? (copy.speed / 4.5f * 100).ToString("F2") + "% of a BAD" : copy.speed)}");
+        var rounds = new Il2CppSystem.Collections.Generic.List<OptionData>();
+        var spawnRounds = boss.GetSpawnRounds().ToList();
+        spawnRounds.Sort();
 
-        healthLabel?.SetText("Health: " + ModBoss.FormatNumber(copy.maxHealth));
+        // Keep the same round
+        if (this.currentRound.HasValue)
+            index = spawnRounds.IndexOf(this.currentRound.Value);
 
-        if (Boss.RoundsInfo.TryGetValue(round, out ModBoss.BossRoundInfo roundInfo))
+        this.bossInfo_Rounds.Dropdown.ClearOptions();
+
+        foreach (var item in spawnRounds)
+            rounds.Add(new OptionData(item.ToString()));
+
+        this.bossInfo_Rounds.Dropdown.AddOptions(rounds);
+        this.bossInfo_Rounds.Dropdown.Select();
+
+        if (index <= 0)
+            index = 0;
+
+        this.bossInfo_Rounds.Dropdown.value = index;
+        this.SelectRound(spawnRounds[index]);
+    }
+    private void UpdateSpeed(BloonModel model)
+    {
+        if (this.bossInfo_Speed == null || bloonsPerSpeed == null || !this.currentRound.HasValue)
+            return;
+
+        var lastSpeed = bloonsPerSpeed.Keys.ElementAt(0);
+
+        // Find the closest speed
+        for (var i = 1; i < bloonsPerSpeed.Count; i++)
         {
-            if (skullLabel != null)
-            {
-                skullLabel.SetActive(Boss.UsesSkulls);
-                if (roundInfo.skullCount != null)
-                {
-                    skullLabel.SetText($"Skull{(roundInfo.skullCount > 1 ? "s" : "")} ({roundInfo.skullCount}): {roundInfo.skullDescription ?? Boss.SkullDescription}");
-                    SizeOverflowText(skullLabel);
-                }
-            }
+            var speed = bloonsPerSpeed.Keys.ElementAt(i);
 
-            if (timerLabel != null)
-            {
-                timerLabel.SetActive(Boss.UsesTimer);
+            if (speed > model.speed)
+                break;
 
-                roundInfo.interval ??= Boss.Interval;
-
-                if (roundInfo.interval != null)
-                {
-                    timerLabel.SetText($"Timer ({roundInfo.interval}s): {roundInfo.timerDescription ?? Boss.TimerDescription}");
-                    SizeOverflowText(timerLabel);
-                }
-            }
+            lastSpeed = speed;
         }
 
-        if (modifPanel != null)
+        // Show the speed
+        this.bossInfo_Speed.SetText($"Speed: {model.speed / lastSpeed * 100:F2}% of a {bloonsPerSpeed[lastSpeed]}");
+    }
+    private int UpdateProperties(ModHelperScrollPanel parent, BloonModel model)
+    {
+        for (var i = parent.ScrollContent.transform.childCount - 1; i >= 0; i--)
+            GameObject.Destroy(parent.ScrollContent.transform.GetChild(i).gameObject);
+
+        // "This boss has Lead properties."
+        var buttons = new Dictionary<BloonProperties, string>()
         {
-            modifPanel.ScrollContent.transform.DestroyAllChildren();
+            [BloonProperties.Lead] = VanillaSprites.LeadBloonIcon,
+            [BloonProperties.Black] = VanillaSprites.BlackBloonIcon,
+            [BloonProperties.White] = VanillaSprites.WhiteBloonIcon,
+            [BloonProperties.Purple] = VanillaSprites.PurpleBloonIcon,
+            [BloonProperties.Frozen] = VanillaSprites.AbsoluteZeroUpgradeIcon,
+        };
 
-            if (Boss.SpawnRounds.First() != round && roundInfo.allowDuplicate == false)
-                modifPanel.AddScrollContent(modifPanel.AddButton(new Info("DefeatBeforeSpawnBtn", modifiersIconHeight), VanillaSprites.GoFastForwardIcon, new Action(() => { ShowPropertyPopup("Previous tier must be killed before this one appears."); })));
+        var counter = 0;
 
-            if (copy.isCamo)
-                modifPanel.AddScrollContent(modifPanel.AddButton(new Info("CamoBtn", modifiersIconHeight), VanillaSprites.CamoBloonIcon, new Action(() => { ShowPropertyPopup("This boss has Camo properties."); })));
+        foreach (BloonProperties property in System.Enum.GetValues(typeof(BloonProperties)))
+        {
+            if (property == BloonProperties.None)
+                continue;
 
-            if (copy.isFortified)
-                modifPanel.AddScrollContent(modifPanel.AddButton(new Info("FortifiedBtn", modifiersIconHeight), VanillaSprites.FortifiedBloonIcon, new Action(() => { ShowPropertyPopup("This boss is fortified."); })));
+            if (!model.bloonProperties.HasFlag(property))
+                continue;
 
-            foreach (BloonProperties property in Enum.GetValues(typeof(BloonProperties)))
+            var text = $"{this.currentBoss?.DisplayName ?? "This boss"} has {property} properties";
+
+            _ = parent.ScrollContent.AddButton(new Info("Btn")
             {
-                if (property == BloonProperties.None)
-                    continue;
-
-                if (copy.bloonProperties.HasFlag(property))
-                {
-                    switch (property)
-                    {
-                        case BloonProperties.Lead:
-                            modifPanel.AddScrollContent(modifPanel.AddButton(new Info("CamoBtn", modifiersIconHeight), VanillaSprites.LeadBloonIcon, new Action(() => { ShowPropertyPopup("This boss has Lead properties."); })));
-                            break;
-                        case BloonProperties.Black:
-                            modifPanel.AddScrollContent(modifPanel.AddButton(new Info("BlackBtn", modifiersIconHeight), VanillaSprites.BlackBloonIcon, new Action(() => { ShowPropertyPopup("This boss has Black properties."); })));
-                            break;
-                        case BloonProperties.White:
-                            modifPanel.AddScrollContent(modifPanel.AddButton(new Info("WhiteBtn", modifiersIconHeight), VanillaSprites.WhiteBloonIcon, new Action(() => { ShowPropertyPopup("This boss has White properties."); })));
-                            break;
-                        case BloonProperties.Purple:
-                            modifPanel.AddScrollContent(modifPanel.AddButton(new Info("PurpleBtn", modifiersIconHeight), VanillaSprites.PurpleBloonIcon, new Action(() => { ShowPropertyPopup("This boss has Purple properties."); })));
-                            break;
-                        case BloonProperties.Frozen:
-                            modifPanel.AddScrollContent(modifPanel.AddButton(new Info("FrozenBtn", modifiersIconHeight), VanillaSprites.AbsoluteZeroUpgradeIcon, new Action(() => { ShowPropertyPopup("This boss has Frozen properties."); })));
-                            break;
-                        case BloonProperties.None:
-                        default:
-                            modifPanel.AddScrollContent(modifPanel.AddButton(new Info("HowBtn", modifiersIconHeight), VanillaSprites.HomeIcon, new Action(() => { ShowPropertyPopup("How ?! You're not supposed to see that !\nContact WarperSan about this."); })));
-                            break;
-                    }
-                }
-            }
-
-            modifPanel.SetActive(modifPanel.ScrollContent.transform.childCount != 0);
+                Size = 150
+            }, buttons[property], new System.Action(() => ShowPropertyPopup(text)));
+            counter++;
         }
 
-        firstBoss = false;
+        return counter;
+    }
+    private void UpdateExtraCredits(ModBoss boss)
+    {
+        if (!this.bossInfo_ExtraCredits.HasValue)
+            return;
+         
+        this.bossInfo_ExtraCredits.Value.text.SetText(boss.ExtraCredits);
+        this.bossInfo_ExtraCredits.Value.panel.SetActive(boss.ExtraCredits.Trim().Length > 0);
     }
 
+    #endregion
+
+    #region Other
+    
     private static void ShowPropertyPopup(string message) => PopupScreen.instance.SafelyQueue(screen => screen.ShowOkPopup(message));
 
-    private static void SizeOverflowText(ModHelperText label)
-    {
-        var lineCount = label.Text.GetTextInfo(label.Text.text).lineCount;
-
-        var timerLineCount = lineCount + (firstBoss ? -1 : 0);
-        label.RectTransform.sizeDelta = new Vector2(label.RectTransform.sizeDelta.x,
-            lineCount == 1 ? label.Text.fontSize : (label.Text.fontSize * timerLineCount) + (label.Text.lineSpacing * (timerLineCount - 1)));
-    }
+    #endregion
 }

@@ -1,4 +1,5 @@
 ﻿using BossIntegration;
+using BossIntegration.Boss;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Simulation.Bloons;
 namespace BTD_Mod_Helper.Patches.Bloons;
@@ -12,7 +13,7 @@ internal class Blooon_Leaked
         SessionData.Instance.LeakedBloons.Add(__instance);
 
         // If the bloon wasn't a boss
-        if (!ModBoss.IsAliveBoss(__instance, out ModBoss? boss) || boss == null)
+        if (!__instance.IsAliveBoss(out ModBoss? boss) || boss == null)
             return true;
 
         boss.Leak(__instance);

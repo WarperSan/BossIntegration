@@ -1,4 +1,5 @@
-﻿using BTD_Mod_Helper.Api;
+﻿using BossIntegration.Boss;
+using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Extensions;
@@ -7,7 +8,6 @@ using Il2CppAssets.Scripts.Models.Bloons.Behaviors;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using static BossIntegration.ModBoss;
 
 namespace BossIntegration.UI;
 internal class DefaultHealthUI
@@ -33,30 +33,30 @@ internal class DefaultHealthUI
 
         ui.HpBar = HealthBar(panel);
         Frame(panel);
-        ui.HpText = HealthText(panel, BossIntegration.FontMedium);
-        
-        ui.Skulls = boss.UsesSkulls ? Skulls(panel, model, 150) : new();
+        ui.HpText = HealthText(panel, 69);
+
+        ui.Skulls = boss.UsesSkull() ? Skulls(panel, model, 150) : new();
 
         if (infos.tier.HasValue)
             Stars(panel, infos.tier.Value, 100);
 
-        Icon(panel, boss, 250);
+        Icon(panel, boss, 300);
 
         return panel;
     }
 
     #region Components
 
-    private static void Icon(ModHelperPanel parent, ModBoss boss, float size)
+    private static void Icon(ModHelperPanel parent, ModBoss boss, float size) => parent.AddImage(new Info("Icon")
     {
-        parent.AddImage(new Info("Icon")
-        {
-            AnchorMinX = 0,
-            AnchorMaxX = 0,
-            X = -size / 2,
-            Size = size,
-        }, ModContent.GetSprite(boss.mod, boss.Icon));
-    }
+        Pivot = new Vector2(0.5f, 0.5f),
+        AnchorMinX = 0,
+        AnchorMaxX = 0,
+        AnchorMaxY = 0.5f,
+        AnchorMinY = 0.5f,
+        X = -size / 2,
+        Size = size,
+    }, boss.IconReference.guidRef);
     private static void Stars(ModHelperPanel parent, uint tier, float size)
     {
         ModHelperPanel panel = parent.AddPanel(new Info("Stars")
@@ -134,8 +134,11 @@ internal class DefaultHealthUI
 
         var skulls = new List<ModHelperImage>();
 
-        foreach (var item in model.GetBehavior<HealthPercentTriggerModel>().percentageValues)
-            skulls.Add(Skull(holder, Mathf.Clamp(item, 0, 1), size));
+        Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppStructArray<float> percentageValues = 
+            model.GetBehavior<HealthPercentTriggerModel>().percentageValues;
+
+        for (var i = percentageValues.Count - 1; i >= 0; i--)
+            skulls.Add(Skull(holder, Mathf.Clamp(percentageValues[i], 0, 1), size));
 
         return skulls;
     }

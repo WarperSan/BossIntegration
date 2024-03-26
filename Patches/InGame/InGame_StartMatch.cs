@@ -1,4 +1,5 @@
-﻿using BossIntegration.UI;
+﻿using BossIntegration.Boss;
+using BossIntegration.UI;
 using HarmonyLib;
 namespace BossIntegration.Patches.InGame;
 
@@ -8,7 +9,7 @@ internal class InGame_StartMatch
     [HarmonyPostfix]
     internal static void Postfix()
     {
-        if (!ModBoss.HasBosses)
+        if (!Cache.HasBosses)
             return;
      
         ModBossUI.Init();

@@ -1,16 +1,18 @@
-﻿using BTD_Mod_Helper.Api;
+﻿using BossIntegration.Boss;
+using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Unity.UI_New;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using Cache = BossIntegration.Boss.Cache;
 
 namespace BossIntegration.UI.Menus;
 
 internal class BossesMenuBtn
 {
-    private const string BUTTON_SPRITE_NAME = "Icon";
+    private const string BUTTON_SPRITE_NAME = "BossButton";
     private const string PARENT_NAME = "Friends";
     private const string BUTTON_NAME = "BossIntegration-BossButton";
 
@@ -18,7 +20,7 @@ internal class BossesMenuBtn
 
     internal static void OnMenuChanged()
     {
-        if (!ModBoss.HasBosses)
+        if (!Cache.HasBosses)
             return;
 
         if (buttonPanel != null)
@@ -34,7 +36,7 @@ internal class BossesMenuBtn
         Transform foregroundScreen = CommonForegroundScreen.instance.transform;
         Transform roundSetChanger = foregroundScreen.FindChild(PARENT_NAME);
 
-        if (roundSetChanger == null || !ModBoss.HasBosses)
+        if (roundSetChanger == null || !Cache.HasBosses)
             return;
 
         if (roundSetChanger.Find(BUTTON_NAME) == null)
@@ -67,13 +69,13 @@ internal class BossesMenuBtn
         ModHelperButton bossesBtn = panel.AddButton(
             new Info("BossMenuBtn", 0, 0, 220, 220),
             ModContent.GetSpriteReference<BossIntegration>(BUTTON_SPRITE_NAME).GUID,
-            new Action(() => ModGameMenu.Open<BossesMenu2>()));
+            new Action(() => ModGameMenu.Open<BossesMenu>()));
 
-        var count = ModBoss.Count.ToString();
+        var count = Cache.Count.ToString();
         var text = "Boss";
 
         // Make it plurial
-        if (ModBoss.Count > 1)
+        if (Cache.Count > 1)
             text += "es";
 
         //if (count.Length < 3)

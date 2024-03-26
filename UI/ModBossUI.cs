@@ -1,4 +1,5 @@
-﻿using BTD_Mod_Helper.Api.Components;
+﻿using BossIntegration.Boss;
+using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Simulation.Bloons;
@@ -11,6 +12,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using static BossIntegration.ModBoss;
+using Cache = BossIntegration.Boss.Cache;
 
 namespace BossIntegration.UI;
 
@@ -40,7 +42,7 @@ internal class ModBossUI
         {
             MainPanel.DeleteObject();
             WaitHolder = null;
-            ModBoss.ClearBosses();
+            AliveCache.ClearBosses();
         }
 
         // Create parent
@@ -74,9 +76,9 @@ internal class ModBossUI
         // Get every boss for every round
         Rounds = new Dictionary<int, List<ModBoss>>();
 
-        foreach (ModBoss boss in ModBoss.GetBosses())
+        foreach (ModBoss boss in Cache.GetBosses())
         {
-            foreach (var round in boss.SpawnRounds)
+            foreach (var round in boss.GetSpawnRounds())
             {
                 if (!Rounds.ContainsKey(round))
                     Rounds[round] = new List<ModBoss>();
@@ -138,7 +140,7 @@ internal class ModBossUI
 
         foreach ((var round, List<ModBoss> b) in Rounds)
         {
-            if (round <= currentRound || !b.Any(boss => ModBoss.GetPermission(boss, round)))
+            if (round <= currentRound || !b.Any(boss => boss.GetPermission(round)))
                 continue;
 
             if (round - currentRound >= closestRound)
@@ -157,7 +159,7 @@ internal class ModBossUI
         List<ModBoss> bosses = Rounds[key];
 
         // Remove all the bosses that can't spawn
-        _ = bosses.RemoveAll(boss => !ModBoss.GetPermission(boss, key));
+        _ = bosses.RemoveAll(boss => !boss.GetPermission(key));
 
         var uiAmount = MAX_LINES;
 
@@ -184,12 +186,12 @@ internal class ModBossUI
 
     private static void UpdateHealthPanels()
     {
-        var copy = ModBoss.BossesAlive.Keys.ToList();
+        var copy = AliveCache.GetBosses().Keys.ToList();
         foreach (BloonToSimulation? item in InGame.instance.GetAllBloonToSim())
             _ = copy.Remove(item.GetBloon().Id);
 
         foreach (Il2CppAssets.Scripts.ObjectId item in copy)
-            ModBoss.RemoveUI(item);
+            AliveCache.RemoveUI(item);
     }
 
     public static bool HasHealthPanel(ModBoss boss)

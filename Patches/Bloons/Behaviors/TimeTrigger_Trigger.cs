@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using BossIntegration.Boss;
+using HarmonyLib;
 using Il2CppAssets.Scripts.Simulation.Bloons.Behaviors;
 
 namespace BossIntegration.Patches.Bloons.Behaviors;
@@ -9,7 +10,7 @@ internal static class TimeTrigger_Trigger
     [HarmonyPrefix]
     private static void Prefix(TimeTrigger __instance)
     {
-        if (!ModBoss.IsAliveBoss(__instance.bloon, out ModBoss? boss) || boss == null)
+        if (!__instance.bloon.IsAliveBoss(out ModBoss? boss) || boss == null)
             return;
 
         boss.TimerTick(__instance.bloon);

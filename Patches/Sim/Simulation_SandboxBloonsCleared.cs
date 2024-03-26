@@ -1,4 +1,5 @@
-﻿using BossIntegration.UI;
+﻿using BossIntegration.Boss;
+using BossIntegration.UI;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Simulation;
 
@@ -10,7 +11,7 @@ internal class Simulation_SandboxBloonsCleared
     [HarmonyPostfix]
     internal static void Postfix()
     {
-        if (!ModBoss.HasBosses)
+        if (!Cache.HasBosses)
             return;
 
         ModBossUI.Init();

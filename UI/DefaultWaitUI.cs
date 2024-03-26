@@ -23,7 +23,7 @@ internal class DefaultWaitUI
         panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.34f);
 
         if (bosses.Length <= 3)
-            Icons(panel, bosses, 150);
+            Icons(panel, bosses, 175);
 
         Text(panel, bosses.Length, round);
 

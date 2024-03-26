@@ -1,4 +1,5 @@
-﻿using BTD_Mod_Helper.Api;
+﻿using BossIntegration.Boss;
+using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Extensions;
@@ -29,7 +30,7 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
 
         }/*, VanillaSprites.MainBGPanelBlueNotchesShadow*/);
 
-        var bosses = ModBoss.GetBosses().ToList();
+        var bosses = Boss.Cache.GetBosses().ToList();
         bosses.Sort((b1, b2) => b1.DisplayName.CompareTo(b2.DisplayName));
 
         var rounds = GetRounds(bosses);
@@ -74,7 +75,7 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
         if (hasSaved)
             return;
 
-        ModBoss.SavePermissions();
+        Permissions.SavePermissions();
         hasSaved = true;
     }
 
@@ -259,7 +260,7 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
         {
             foreach (var round in rounds)
             {
-                if (!boss.SpawnRounds.Contains(round))
+                if (!boss.GetSpawnRounds().Contains(round))
                 {
                     _ = buttonPanel.AddPanel(new Info("Empty")
                     {
@@ -274,7 +275,7 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
 
                 var onValueChanged = new Action<bool>(value =>
                 {
-                    _ = ModBoss.SetPermission(b, r, value);
+                    _ = b.SetPermission(r, value);
                 });
 
                 ModHelperCheckbox newCheck = buttonPanel
@@ -282,7 +283,7 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
                     .AddCheckbox(new Info(boss.ToString() + round)
                     {
                         Size = 150,
-                    }, ModBoss.GetPermission(boss, round), VanillaSprites.BlueInsertPanelRound, onValueChanged);
+                    }, boss.GetPermission(round), VanillaSprites.BlueInsertPanelRound, onValueChanged);
 
                 checks.Add(newCheck);
 

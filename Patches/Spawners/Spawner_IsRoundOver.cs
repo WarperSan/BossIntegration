@@ -1,4 +1,5 @@
-﻿using BTD_Mod_Helper;
+﻿using BossIntegration.Boss;
+using BTD_Mod_Helper;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Models.Profile;
@@ -28,7 +29,7 @@ internal static class Spawner_IsRoundOver
         {
             return
                 bloon != null &&
-                ModBoss.TryGetBoss(bloon, out ModBoss? boss) &&
+                bloon.TryGetBoss(out ModBoss? boss) &&
                 boss != null &&
                 boss.BlockRounds;
         });

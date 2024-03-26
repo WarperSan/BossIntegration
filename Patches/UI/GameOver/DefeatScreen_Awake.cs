@@ -1,4 +1,5 @@
-﻿using BossIntegration.UI;
+﻿using BossIntegration.Boss;
+using BossIntegration.UI;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Unity.UI_New.GameOver;
 using System;
@@ -11,7 +12,7 @@ internal class DefeatScreen_Awake
     [HarmonyPostfix]
     internal static void Postfix(DefeatScreen __instance)
     {
-        if (!ModBoss.HasBosses)
+        if (!Cache.HasBosses)
             return;
 
         __instance.retryLastRoundButton.onClick.AddListener(new Action(ModBossUI.Init));

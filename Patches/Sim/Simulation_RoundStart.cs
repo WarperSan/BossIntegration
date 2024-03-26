@@ -1,4 +1,5 @@
-﻿using BossIntegration.UI;
+﻿using BossIntegration.Boss;
+using BossIntegration.UI;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Simulation;
@@ -12,7 +13,7 @@ internal class Simulation_RoundStart
     [HarmonyPostfix]
     internal static void Postfix()
     {
-        if (!ModBoss.HasBosses)
+        if (!Cache.HasBosses)
             return;
 
         ModBossUI.Update();
@@ -20,11 +21,11 @@ internal class Simulation_RoundStart
         // Get current round
         var currentRound = Il2CppAssets.Scripts.Unity.UI_New.InGame.InGame.Bridge.GetCurrentRound() + 1;
 
-        IEnumerable<ModBoss> bosses = ModBoss.GetBossesForRound(currentRound);
+        IEnumerable<ModBoss> bosses = Cache.GetBossesForRound(currentRound);
 
         foreach (ModBoss boss in bosses)
         {
-            if (!ModBoss.GetPermission(boss, currentRound))
+            if (!boss.GetPermission(currentRound))
                 continue;
 
             boss.Spawn(currentRound);

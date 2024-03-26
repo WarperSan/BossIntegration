@@ -6,5 +6,5 @@ namespace BossIntegration.Patches.InGame;
 internal class InGame_CreateCurrentMapSave
 {
     [HarmonyPrefix]
-    internal static bool Prefix() => ModBoss.AnyBossAlive;
+    internal static bool Prefix() => Boss.AliveCache.AnyBossAlive;
 }

@@ -1,9 +1,15 @@
 ﻿using BossIntegration;
+using BossIntegration.Boss;
 using BossIntegration.UI;
+using BossIntegration.UI.Menus;
 using BTD_Mod_Helper;
+using BTD_Mod_Helper.Api;
+using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Api.ModOptions;
+using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
+using Il2CppAssets.Scripts.Unity.UI_New.Pause;
 using MelonLoader;
 
 [assembly: MelonInfo(typeof(BossIntegration.BossIntegration), ModHelperData.Name, ModHelperData.Version, ModHelperData.RepoOwner)]
@@ -13,19 +19,6 @@ namespace BossIntegration;
 
 public class BossIntegration : BloonsTD6Mod
 {
-    public static readonly int FontSmall = 52;
-    public static readonly int FontMedium = 69;
-    public static readonly int FontLarge = 80;
-
-    public static readonly int Padding = 50;
-    public static readonly int MenuWidth = 3600;
-    public static readonly int MenuHeight = 1900;
-
-    public static readonly int ModNameHeight = 150;
-    public static readonly int ModNameWidth = 1000;
-
-    public static readonly int ModIconSize = 250;
-
     private static readonly ModSettingCategory General = new("General")
     {
         collapsed = false,
@@ -48,9 +41,30 @@ public class BossIntegration : BloonsTD6Mod
 
     public override void OnInGameLoaded(InGame inGame)
     {
-        if (!ModBoss.HasBosses)
+        if (!Cache.HasBosses)
             return;
 
         ModBossUI.Init();
+    }
+
+    public override void OnPauseScreenOpened(PauseScreen pauseScreen)
+    {
+        var size = 100;
+
+        var panel = pauseScreen.transform.Find("Bg").gameObject.AddModHelperPanel(new Info("AC")
+        {
+            AnchorMinX = 0,
+            AnchorMaxX = 0,
+            AnchorMinY = 1,
+            AnchorMaxY = 1,
+            Size = size,
+            X = size,
+            Y = -size / 1.25f
+        });
+
+        var button = panel.AddButton(
+            new Info("BossMenuBtn", 0, 0, size, size),
+            ModContent.GetSpriteReference<BossIntegration>("BossButton").GUID,
+            new System.Action(() => ModGameMenu.Open<BossesMenu>()));
     }
 }
