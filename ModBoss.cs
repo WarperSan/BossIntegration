@@ -11,6 +11,7 @@ using Il2Cpp;
 using Il2CppAssets.Scripts.Models.Bloons;
 using Il2CppAssets.Scripts.Models.Bloons.Behaviors;
 using Il2CppAssets.Scripts.Simulation.Bloons;
+using Il2CppAssets.Scripts.Unity.Achievements.List;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using System.Collections.Generic;
 using System.Linq;
@@ -188,6 +189,17 @@ public abstract class ModBoss : ModBloon
             return;
 
         ui.Skulls.Last(img => img != null).DeleteObject();
+    }
+
+    /// <summary>
+    /// Called when a skull is selected in the boss menu. This is useful if skulls do different things on the same boss
+    /// </summary>
+    /// <param name="round">Round on which the description is needed</param>
+    /// <param name="index">Index of the skull called. 0 is equal to the last skull</param>
+    /// <returns>Description to show</returns>
+    public virtual string GetSkullDescription(int round, int index)
+    {
+        return this.RoundsInfo[round].skullDescription ?? this.SkullDescription;
     }
 
     // --- EVENTS ---

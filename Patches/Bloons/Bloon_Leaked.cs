@@ -8,16 +8,14 @@ namespace BTD_Mod_Helper.Patches.Bloons;
 internal class Blooon_Leaked
 {
     [HarmonyPrefix]
-    internal static bool Prefix(Bloon __instance)
+    internal static void Prefix(Bloon __instance)
     {
         SessionData.Instance.LeakedBloons.Add(__instance);
 
         // If the bloon wasn't a boss
         if (!__instance.IsAliveBoss(out ModBoss? boss) || boss == null)
-            return true;
+            return;
 
         boss.Leak(__instance);
-
-        return true;
     }
 }

@@ -117,26 +117,8 @@ internal static class Events
         if ((boss.Skulls == null && info.skullCount == null) || !model.HasBehavior<HealthPercentTriggerModel>())
             return;
 
-        // Puts default skulls placement
-        if (info.percentageValues == null)
-        {
-            var skullsCount = info.skullCount ?? boss.Skulls ?? 0;
-
-            var pV = new List<float>();
-
-            if (skullsCount > 0)
-            {
-                for (var i = 1; i <= skullsCount; i++)
-                {
-                    pV.Add(1f - (1f / (skullsCount + 1) * i));
-                }
-            }
-
-            info.percentageValues = pV.ToArray();
-        }
-
         HealthPercentTriggerModel bossSkulls = model.GetBehavior<HealthPercentTriggerModel>();
-        bossSkulls.percentageValues = info.percentageValues;
+        bossSkulls.percentageValues = info.GetSkullsPosition(boss);
         bossSkulls.preventFallthrough = info.preventFallThrough != null && (bool)info.preventFallThrough;
     }
     private static void Spawn_Timer(ModBoss boss, BossRoundInfo info, Bloon bloon)

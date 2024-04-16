@@ -84,7 +84,7 @@ internal class DefaultHealthUI
             "888888888888 / 888888888888",
             fontSize,
             Il2CppTMPro.TextAlignmentOptions.BottomRight);
-    private static Image HealthBar(ModHelperPanel parent)
+    public static Image HealthBar(ModHelperPanel parent)
     {
         ModHelperPanel panel = parent.AddPanel(new Info("HealthBar")
         {
@@ -103,7 +103,7 @@ internal class DefaultHealthUI
 
         return slider;
     }
-    private static void Frame(ModHelperPanel parent)
+    public static void Frame(ModHelperPanel parent)
     {
         Image image = parent.AddImage(
             new Info("Frame")
@@ -142,7 +142,7 @@ internal class DefaultHealthUI
 
         return skulls;
     }
-    private static ModHelperImage Skull(ModHelperPanel parent, float value, float size) => parent.AddImage(new Info("Skull")
+    public static ModHelperImage Skull(ModHelperPanel parent, float value, float size) => parent.AddImage(new Info("Skull")
     {
         AnchorMinX = value,
         AnchorMaxX = value,

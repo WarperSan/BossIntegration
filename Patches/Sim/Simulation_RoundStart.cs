@@ -1,6 +1,5 @@
 ﻿using BossIntegration.Boss;
 using BossIntegration.UI;
-using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Simulation;
 using System.Collections.Generic;

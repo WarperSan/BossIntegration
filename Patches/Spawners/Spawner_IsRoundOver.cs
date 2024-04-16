@@ -20,6 +20,9 @@ internal static class Spawner_IsRoundOver
         if (__instance.IsCurrentSpawnRoundEmitting())
             return true;
 
+        if (!Cache.HasBosses || !AliveCache.AnyBossAlive)
+            return true;
+
         var aliveBloons = Il2CppAssets.Scripts.Unity.UI_New.InGame.InGame.instance
             .GetAllBloonToSim()
             .Select(x => x.GetSimBloon())

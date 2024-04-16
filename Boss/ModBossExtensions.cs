@@ -45,6 +45,28 @@ public static class ModBossExtensions
     public static bool UsesSkull(this ModBoss boss) 
         => boss.Skulls != null || boss.RoundsInfo.Any(info => info.Value.skullCount > 0);
 
+    public static float[] GetSkullsPosition(this BossRoundInfo info, ModBoss boss)
+    {
+        if (info.percentageValues == null)
+        {
+            var skullsCount = info.skullCount ?? boss.Skulls ?? 0;
+
+            var pV = new List<float>();
+
+            if (skullsCount > 0)
+            {
+                for (var i = 1; i <= skullsCount; i++)
+                {
+                    pV.Add(1f - (1f / (skullsCount + 1) * i));
+                }
+            }
+
+            info.percentageValues = pV.ToArray();
+        }
+
+        return info.percentageValues;
+    }
+
     private static readonly string[] NumSuffixs = new string[] { 
         "K", "M", "B", "T", 
         "q", "Q", "s", "S", 

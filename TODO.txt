@@ -1,0 +1,7 @@
+﻿TODO:
+- Better Health Bar UI
+- Better Waiting UI
+- Better Info UI
+- InGame Info UI
+- Bosses Settings
+- Better way to force rounds to keep coming
