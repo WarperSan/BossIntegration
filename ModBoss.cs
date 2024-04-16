@@ -1,4 +1,4 @@
-﻿// Adapted from WarperSan's BossPack 
+﻿// Adapted from WarperSan's BossPack
 
 using BossIntegration.Boss;
 using BossIntegration.UI;
@@ -11,11 +11,9 @@ using Il2Cpp;
 using Il2CppAssets.Scripts.Models.Bloons;
 using Il2CppAssets.Scripts.Models.Bloons.Behaviors;
 using Il2CppAssets.Scripts.Simulation.Bloons;
-using Il2CppAssets.Scripts.Unity.Achievements.List;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using System.Collections.Generic;
 using System.Linq;
-using Image = UnityEngine.UI.Image;
 
 namespace BossIntegration;
 
@@ -27,7 +25,7 @@ public abstract class ModBoss : ModBloon
     #region ModBloon
 
     /// <inheritdoc/>
-    public sealed override void ModifyBaseBloonModel(BloonModel bloonModel)
+    public override sealed void ModifyBaseBloonModel(BloonModel bloonModel)
     {
         bloonModel.RemoveAllChildren();
         bloonModel.danger = 16;
@@ -49,7 +47,7 @@ public abstract class ModBoss : ModBloon
     }
 
     /// <inheritdoc />
-    public sealed override void Register()
+    public override sealed void Register()
     {
         if (this.RoundsInfo.Count == 0)
         {
@@ -61,19 +59,19 @@ public abstract class ModBoss : ModBloon
     }
 
     /// <inheritdoc />
-    public sealed override string BaseBloon => BloonType.Bad;
+    public override sealed string BaseBloon => BloonType.Bad;
 
     /// <inheritdoc />
-    public sealed override bool KeepBaseId => false;
+    public override sealed bool KeepBaseId => false;
 
     /// <inheritdoc />
-    public sealed override bool Regrow => false;
+    public override sealed bool Regrow => false;
 
     /// <inheritdoc />
-    public sealed override string RegrowsTo => "";
+    public override sealed string RegrowsTo => "";
 
     /// <inheritdoc />
-    public sealed override float RegrowRate => 3;
+    public override sealed float RegrowRate => 3;
 
     #endregion ModBloon
 
@@ -103,7 +101,7 @@ public abstract class ModBoss : ModBloon
     public virtual bool DefeatOnLeak => true;
 
     /// <summary>
-    /// Determines if the boss blocks the rounds from spawning. 
+    /// Determines if the boss blocks the rounds from spawning.
     /// If set to true, the boss will have to be defeated before the next round starts
     /// </summary>
     public virtual bool BlockRounds => false;
@@ -150,7 +148,7 @@ public abstract class ModBoss : ModBloon
     /// </summary>
     public virtual bool UsingDefaultWaitingUi => true;
 
-    #endregion
+    #endregion Stats
 
     #region Virtual
 
@@ -158,24 +156,28 @@ public abstract class ModBoss : ModBloon
     /// <summary>
     /// Modifies the base model of the boss. This is called when <see cref="ModBloon.ModifyBaseBloonModel(BloonModel)"/> is called
     /// </summary>
-    protected virtual void ModifyBloonModel(BloonModel bloonModel) { }
+    protected virtual void ModifyBloonModel(BloonModel bloonModel)
+    { }
 
     /// <summary>
     /// Modifies the boss based on the round
     /// </summary>
-    public virtual void ModifyForRound(BloonModel bloon, int round) { }
+    public virtual void ModifyForRound(BloonModel bloon, int round)
+    { }
 
     // --- TIMER ---
     /// <summary>
     /// Called when the boss timer ticks
     /// </summary>
-    public virtual void TimerTick(Bloon boss) { }
+    public virtual void TimerTick(Bloon boss)
+    { }
 
     // --- SKULL ---
     /// <summary>
     /// Called when the boss hits a skull
     /// </summary>
-    public virtual void SkullEffect(Bloon boss) { }
+    public virtual void SkullEffect(Bloon boss)
+    { }
 
     /// <summary>
     /// Called when the boss should get a skull remove
@@ -206,22 +208,26 @@ public abstract class ModBoss : ModBloon
     /// <summary>
     /// Called when the boss is spawned
     /// </summary>
-    public virtual void OnSpawn(Bloon bloon) { }
+    public virtual void OnSpawn(Bloon bloon)
+    { }
 
     /// <summary>
     /// Called when the boss is leaked
     /// </summary>
-    public virtual void OnLeak(Bloon bloon) { }
+    public virtual void OnLeak(Bloon bloon)
+    { }
 
     /// <summary>
     /// Called when the boss is popped
     /// </summary>
-    public virtual void OnPop(Bloon bloon) { }
+    public virtual void OnPop(Bloon bloon)
+    { }
 
     /// <summary>
     /// Called when the boss takes a damage
     /// </summary>
-    public virtual void OnDamage(Bloon bloon, float totalAmount) { }
+    public virtual void OnDamage(Bloon bloon, float totalAmount)
+    { }
 
     // --- UI ---
     /// <summary>
@@ -251,12 +257,12 @@ public abstract class ModBoss : ModBloon
     /// </remarks>
     public virtual void AddWaitPanel(ModHelperPanel waitingHolderPanel) => ModHelper.Error<BossIntegration>($"'{this}' must override the method '{nameof(AddWaitPanel)}' since '{nameof(this.UsingDefaultWaitingUi)}' is set to true.");
 
-    #endregion
+    #endregion Virtual
 
     #region Object
 
     /// <inheritdoc/>
-    public sealed override string? ToString() => this.GetType().FullName ?? base.ToString();
+    public override sealed string? ToString() => this.GetType().FullName ?? base.ToString();
 
-    #endregion
+    #endregion Object
 }

@@ -27,7 +27,7 @@ public static class ModBossExtensions
 
         return roundInfo.tier;
     }
-    
+
     /// <summary>
     /// The rounds the boss should spawn on
     /// </summary>
@@ -42,7 +42,7 @@ public static class ModBossExtensions
     /// <summary>
     /// Checks if the boss has any skull
     /// </summary>
-    public static bool UsesSkull(this ModBoss boss) 
+    public static bool UsesSkull(this ModBoss boss)
         => boss.Skulls != null || boss.RoundsInfo.Any(info => info.Value.skullCount > 0);
 
     public static float[] GetSkullsPosition(this BossRoundInfo info, ModBoss boss)
@@ -67,14 +67,14 @@ public static class ModBossExtensions
         return info.percentageValues;
     }
 
-    private static readonly string[] NumSuffixs = new string[] { 
-        "K", "M", "B", "T", 
-        "q", "Q", "s", "S", 
-        "O", "N", "d", "U", 
-        "D", "!", "@", "#", 
-        "$", "%", "^", "&", 
-        "*", "[", "]", "{", 
-        "}", ";" 
+    private static readonly string[] NumSuffixs = new string[] {
+        "K", "M", "B", "T",
+        "q", "Q", "s", "S",
+        "O", "N", "d", "U",
+        "D", "!", "@", "#",
+        "$", "%", "^", "&",
+        "*", "[", "]", "{",
+        "}", ";"
     };
 
     /// <returns>Formatted version of the given number</returns>

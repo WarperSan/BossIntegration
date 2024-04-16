@@ -1,5 +1,4 @@
-﻿using BossIntegration.Boss;
-using BTD_Mod_Helper.Api;
+﻿using BTD_Mod_Helper.Api;
 using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Unity.UI_New;
@@ -84,5 +83,5 @@ internal class BossesMenuBtn
         _ = bossesBtn.AddText(new Info("Text", 0, -120, 500, 100), text, 60f);
     }
 
-    #endregion
+    #endregion UI
 }

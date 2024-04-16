@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 
 namespace BossIntegration.Boss;
+
 internal static class Permissions
 {
     private static string Permission_Path => ModHelper.ModHelperDirectory + "\\Mod Settings\\BossesSetting.json";
@@ -45,15 +46,15 @@ internal static class Permissions
         var key = boss.ToString();
 
         return
-            key != null && 
-            Data.TryGetValue(key, out Dictionary<int, bool>? permissions) && 
-            permissions != null && 
-            permissions.TryGetValue(round, out var isAllowed) && 
+            key != null &&
+            Data.TryGetValue(key, out Dictionary<int, bool>? permissions) &&
+            permissions != null &&
+            permissions.TryGetValue(round, out var isAllowed) &&
             isAllowed;
     }
 
     /// <summary>
-    /// Sets the permission for <paramref name="boss"/> on <paramref name="round"/> to <paramref name="value"/> 
+    /// Sets the permission for <paramref name="boss"/> on <paramref name="round"/> to <paramref name="value"/>
     /// </summary>
     /// <param name="boss">Boss to change the permission to</param>
     /// <param name="round">Round of the permission</param>

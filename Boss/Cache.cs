@@ -64,5 +64,5 @@ internal static class Cache
     public static bool TryGetBoss(this Bloon bloon, out ModBoss? boss)
         => TryGetBoss(bloon.bloonModel.name, out boss);
 
-    #endregion
+    #endregion Getter
 }

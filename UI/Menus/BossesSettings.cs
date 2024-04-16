@@ -27,7 +27,6 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
             Y = 0,
             AnchorMin = new Vector2(0.15f, 0.09f),
             AnchorMax = new Vector2(0.85f, 0.85f),
-
         }/*, VanillaSprites.MainBGPanelBlueNotchesShadow*/);
 
         var bosses = Boss.Cache.GetBosses().ToList();
@@ -79,7 +78,7 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
         hasSaved = true;
     }
 
-    #endregion
+    #endregion ModGameMenu
 
     #region Rounds
 
@@ -153,7 +152,7 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
         return rounds.ToArray();
     }
 
-    #endregion
+    #endregion Rounds
 
     #region Bosses
 
@@ -211,7 +210,7 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
 
     private static float GetBossesWidth(int count) => (BOSS_SIZE * count) + (BOSS_SPACING * (count - 1)) + BUTTONS_PADDING;
 
-    #endregion
+    #endregion Bosses
 
     #region Buttons
 
@@ -310,5 +309,5 @@ internal class BossesSettings : ModGameMenu<HotkeysScreen>
         }
     }
 
-    #endregion
+    #endregion Buttons
 }

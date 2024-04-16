@@ -108,7 +108,7 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
 
     private ModHelperPanel? bossInfo_Properties;
 
-    #endregion
+    #endregion Fields
 
     #region Components
 
@@ -198,12 +198,14 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
         this.Labels(panel);
         this.Rounds(panel, isInGame);
     }
+
     private void Icon(ModHelperPanel parent) => this.bossInfo_Icon = parent
             .AddPanel(new Info("Icon") { Flex = 1 })
             .AddImage(new Info("Image")
             {
                 Size = 300,
             }, default(string));
+
     private void Labels(ModHelperPanel parent)
     {
         ModHelperPanel panel = parent.AddPanel(new Info("Labels") { Flex = 6 });
@@ -216,6 +218,7 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
 
         this.Properties(panel);
     }
+
     private void Properties(ModHelperPanel parent)
     {
         // List
@@ -322,6 +325,7 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
         this.Description(content, fontSize);
         this.ExtraCredits(content, fontSize);
     }
+
     private void Description(ModHelperPanel parent, float fontSize)
     {
         // Label "Description"
@@ -346,8 +350,8 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
         // this.bossInfo_Description.Text.overflowMode = Il2CppTMPro.TextOverflowModes.Overflow;
 
         scrollPanel.AddScrollContent(this.bossInfo_Description);
-
     }
+
     private void ExtraCredits(ModHelperPanel parent, float fontSize)
     {
         ModHelperPanel panel = parent.AddPanel(new Info("ExtraCredits")
@@ -397,6 +401,7 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
         this.SkullsGraph(content);
         this.Stats(content, 69);
     }
+
     private void Stats(ModHelperPanel parent, float fontSize)
     {
         // Label "Stats"
@@ -419,6 +424,7 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
         this.Health(statsSP.ScrollContent, fontSize);
         this.Timer(statsSP.ScrollContent, fontSize);
     }
+
     private void IsActive(ModHelperPanel parent, float fontSize)
     {
         this.bossInfo_IsActive = parent.AddText(new Info("Active")
@@ -429,16 +435,19 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
 
         this.bossInfo_IsActive.SetActive(false);
     }
+
     private void Speed(ModHelperPanel parent, float fontSize) => this.bossInfo_Speed = parent.AddText(new Info("Speed")
     {
         Height = fontSize,
         FlexWidth = 1,
     }, "speed: NaN", fontSize, Il2CppTMPro.TextAlignmentOptions.TopLeft);
+
     private void Health(ModHelperPanel parent, float fontSize) => this.bossInfo_Health = parent.AddText(new Info("Health")
     {
         Height = fontSize,
         FlexWidth = 1,
     }, "Health: NaN", fontSize, Il2CppTMPro.TextAlignmentOptions.TopLeft);
+
     private void Timer(ModHelperPanel parent, float fontSize) => this.bossInfo_Timer = parent.AddText(new Info("Timer")
     {
         Height = fontSize,
@@ -484,7 +493,7 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
         _ = this.bossInfo_SkullGraph.AddPanel(new Info("Spacing", 50));
     }
 
-    #endregion
+    #endregion Components
 
     #region Update UI
 
@@ -525,7 +534,7 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
 
             if (this.bossInfo_Name != null)
             {
-                this.bossInfo_Name.Text.alignment = this.bossInfo_Properties.isActiveAndEnabled 
+                this.bossInfo_Name.Text.alignment = this.bossInfo_Properties.isActiveAndEnabled
                     ? Il2CppTMPro.TextAlignmentOptions.BottomLeft
                     : Il2CppTMPro.TextAlignmentOptions.MidlineLeft;
             }
@@ -601,6 +610,7 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
         this.bossInfo_Rounds.GetComponent<Il2CppTMPro.TMP_Dropdown>().interactable = spawnRounds.Count > 1;
         this.SelectRound(spawnRounds[index]);
     }
+
     private void UpdateSpeed(BloonModel model)
     {
         if (this.bossInfo_Speed == null || bloonsPerSpeed == null || !this.currentRound.HasValue)
@@ -622,6 +632,7 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
         // Show the speed
         this.bossInfo_Speed.SetText($"Speed: {model.speed / lastSpeed * 100:F2}% of a {bloonsPerSpeed[lastSpeed]}");
     }
+
     private int UpdateProperties(ModHelperPanel parent, BloonModel model)
     {
         parent.transform.DestroyAllChildren();
@@ -657,6 +668,7 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
 
         return counter;
     }
+
     private void UpdateExtraCredits(ModBoss boss)
     {
         if (!this.bossInfo_ExtraCredits.HasValue)
@@ -666,11 +678,11 @@ internal class BossesMenu : ModGameMenu<ExtraSettingsScreen>
         this.bossInfo_ExtraCredits.Value.panel.SetActive(boss.ExtraCredits.Trim().Length > 0);
     }
 
-    #endregion
+    #endregion Update UI
 
     #region Other
 
     private static void ShowPropertyPopup(string message) => PopupScreen.instance.SafelyQueue(screen => screen.ShowOkPopup(message));
 
-    #endregion
+    #endregion Other
 }

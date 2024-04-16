@@ -6,10 +6,10 @@ using Il2CppAssets.Scripts.Models.Bloons.Behaviors;
 using Il2CppAssets.Scripts.Simulation.Bloons;
 using Il2CppAssets.Scripts.Unity;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace BossIntegration.Boss;
+
 internal static class Events
 {
     public static void Pop(this ModBoss boss, Bloon bloon)
@@ -65,7 +65,7 @@ internal static class Events
         hpText.SetText($"{current} / {max}");
     }
 
-    #endregion
+    #endregion Damage
 
     #region Spawn
 
@@ -73,7 +73,7 @@ internal static class Events
     {
         BloonModel bossModel = Game.instance.model.GetBloon(boss.Id);
         boss.ModifyForRound(bossModel, round);
-        
+
         Bloon bloon = InGame.instance.GetMap().spawner.Emit(bossModel, 0, 0);
         bloon.bloonModel.speedFrames = bossModel.speed * 0.416667f / 25;
 
@@ -112,6 +112,7 @@ internal static class Events
 
         KillPlayer(bloon);
     }
+
     private static void Spawn_Skulls(ModBoss boss, BossRoundInfo info, BloonModel model)
     {
         if ((boss.Skulls == null && info.skullCount == null) || !model.HasBehavior<HealthPercentTriggerModel>())
@@ -121,6 +122,7 @@ internal static class Events
         bossSkulls.percentageValues = info.GetSkullsPosition(boss);
         bossSkulls.preventFallthrough = info.preventFallThrough != null && (bool)info.preventFallThrough;
     }
+
     private static void Spawn_Timer(ModBoss boss, BossRoundInfo info, Bloon bloon)
     {
         if (bloon.bloonModel.HasBehavior<TimeTriggerModel>())
@@ -141,5 +143,5 @@ internal static class Events
         bloon.UpdatedModel(bloon.bloonModel);
     }
 
-    #endregion
+    #endregion Spawn
 }

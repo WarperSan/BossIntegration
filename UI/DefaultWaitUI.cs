@@ -1,12 +1,11 @@
 ﻿using BTD_Mod_Helper.Api.Components;
 using BTD_Mod_Helper.Api.Enums;
-using BTD_Mod_Helper.Api;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using BossIntegration.UI.Menus;
 
 namespace BossIntegration.UI;
+
 internal class DefaultWaitUI
 {
     public static ModHelperPanel? Create(ModHelperPanel parent, ModBoss[] bosses, int round)
@@ -50,7 +49,8 @@ internal class DefaultWaitUI
             FlexWidth = 4
         }, text, 40, Il2CppTMPro.TextAlignmentOptions.Center);
     }
-    private static void Icons(ModHelperPanel parent, ModBoss[] bosses, float size)
+
+    private static void Icons(ModHelperPanel parent, ModBoss[] bosses, float size)
     {
         ModHelperPanel iconsHolder = parent.AddPanel(new Info("IconsHolder")
         {
@@ -75,7 +75,7 @@ internal class DefaultWaitUI
         SetCircular(Vector2.zero, objs, 50);
     }
 
-    #endregion
+    #endregion Components
 
     /// <summary>
     /// Puts the given objects in a circular layout. If the list has 1 or 2 items, the layout is hardcoded;

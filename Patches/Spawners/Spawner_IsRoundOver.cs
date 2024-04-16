@@ -1,5 +1,4 @@
 ﻿using BossIntegration.Boss;
-using BTD_Mod_Helper;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Models.Profile;
@@ -48,7 +47,7 @@ internal static class Spawner_IsRoundOver
         if (!playerProfile.inGameSettings.autoPlay)
         {
             playerProfile.inGameSettings.autoPlay = true;
-            Il2CppAssets.Scripts.Unity.UI_New.InGame.InGame.instance.bridge.SetAutoPlay(true); 
+            Il2CppAssets.Scripts.Unity.UI_New.InGame.InGame.instance.bridge.SetAutoPlay(true);
         }
 
         __result = true;

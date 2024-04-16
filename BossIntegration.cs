@@ -1,5 +1,4 @@
 ﻿using BossIntegration;
-using BossIntegration.Boss;
 using BossIntegration.UI;
 using BossIntegration.UI.Menus;
 using BTD_Mod_Helper;
@@ -9,16 +8,8 @@ using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Api.ModOptions;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame;
-using Il2CppAssets.Scripts.Unity.UI_New.InGame.Races;
 using Il2CppAssets.Scripts.Unity.UI_New.Pause;
-using Il2CppSystem.Linq;
 using MelonLoader;
-using System.Collections;
-using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.InputSystem;
-using UnityEngine.IO;
-using UnityEngine.ResourceManagement.AsyncOperations;
 
 [assembly: MelonInfo(typeof(BossIntegration.BossIntegration), ModHelperData.Name, ModHelperData.Version, ModHelperData.RepoOwner)]
 [assembly: MelonGame("Ninja Kiwi", "BloonsTD6")]

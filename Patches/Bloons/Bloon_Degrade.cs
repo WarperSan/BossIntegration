@@ -1,6 +1,7 @@
 ﻿using BossIntegration.Boss;
 using HarmonyLib;
 using Il2CppAssets.Scripts.Simulation.Bloons;
+
 namespace BossIntegration.Patches.Bloons;
 
 [HarmonyPatch(typeof(Bloon), nameof(Bloon.Degrade))]

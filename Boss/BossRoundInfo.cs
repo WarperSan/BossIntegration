@@ -34,7 +34,7 @@ public struct BossRoundInfo
     public string? skullDescription = null;
 
     /// <summary>
-    /// Determines if the boss's health should go down while it's skull effect is on 
+    /// Determines if the boss's health should go down while it's skull effect is on
     /// </summary>
     /// <remarks>
     /// Sets this value: <see cref="HealthPercentTriggerModel.preventFallthrough"/>
@@ -66,7 +66,7 @@ public struct BossRoundInfo
     public string? timerDescription = null;
 
     /// <summary>
-    /// Determines if the player will lose if, when this boss spawns, 
+    /// Determines if the player will lose if, when this boss spawns,
     /// another version of it is alive
     /// </summary>
     public bool? allowDuplicate = null;
@@ -74,5 +74,6 @@ public struct BossRoundInfo
     /// <summary>
     /// Creates an empty round info
     /// </summary>
-    public BossRoundInfo() { }
+    public BossRoundInfo()
+    { }
 }

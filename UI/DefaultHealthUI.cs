@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 namespace BossIntegration.UI;
+
 internal class DefaultHealthUI
 {
     public static ModHelperPanel? Create(
@@ -57,6 +58,7 @@ internal class DefaultHealthUI
         X = -size / 2,
         Size = size,
     }, boss.IconReference.guidRef);
+
     private static void Stars(ModHelperPanel parent, uint tier, float size)
     {
         ModHelperPanel panel = parent.AddPanel(new Info("Stars")
@@ -72,6 +74,7 @@ internal class DefaultHealthUI
         for (var i = 0; i < tier; i++)
             _ = panel.AddImage(new Info("Star" + i, size), sprite);
     }
+
     private static ModHelperText HealthText(ModHelperPanel parent, float fontSize) => parent.AddText(
             new Info("HealthText")
             {
@@ -84,6 +87,7 @@ internal class DefaultHealthUI
             "888888888888 / 888888888888",
             fontSize,
             Il2CppTMPro.TextAlignmentOptions.BottomRight);
+
     public static Image HealthBar(ModHelperPanel parent)
     {
         ModHelperPanel panel = parent.AddPanel(new Info("HealthBar")
@@ -103,6 +107,7 @@ internal class DefaultHealthUI
 
         return slider;
     }
+
     public static void Frame(ModHelperPanel parent)
     {
         Image image = parent.AddImage(
@@ -122,6 +127,7 @@ internal class DefaultHealthUI
         var rect = new Rect(0, 0, image.sprite.texture.width, image.sprite.texture.height);
         image.sprite = Sprite.Create(image.sprite.texture, rect, new Vector2(0.5f, 0.5f), 100, 1, SpriteMeshType.FullRect, new Vector4(30, 30, 30, 30));
     }
+
     private static List<ModHelperImage> Skulls(ModHelperPanel parent, BloonModel model, float size)
     {
         ModHelperPanel holder = parent.AddPanel(new Info("SkullsHolder")
@@ -134,7 +140,7 @@ internal class DefaultHealthUI
 
         var skulls = new List<ModHelperImage>();
 
-        Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppStructArray<float> percentageValues = 
+        Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppStructArray<float> percentageValues =
             model.GetBehavior<HealthPercentTriggerModel>().percentageValues;
 
         for (var i = percentageValues.Count - 1; i >= 0; i--)
@@ -142,6 +148,7 @@ internal class DefaultHealthUI
 
         return skulls;
     }
+
     public static ModHelperImage Skull(ModHelperPanel parent, float value, float size) => parent.AddImage(new Info("Skull")
     {
         AnchorMinX = value,
@@ -150,5 +157,5 @@ internal class DefaultHealthUI
         Size = size,
     }, ModContent.GetTextureGUID<BossIntegration>("BossSkullPipOff"));
 
-    #endregion
+    #endregion Components
 }

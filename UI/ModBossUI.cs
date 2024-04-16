@@ -1,6 +1,5 @@
 ﻿using BossIntegration.Boss;
 using BTD_Mod_Helper.Api.Components;
-using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Extensions;
 using Il2CppAssets.Scripts.Simulation.Bloons;
 using Il2CppAssets.Scripts.Unity.Bridge;
@@ -11,7 +10,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using static BossIntegration.ModBoss;
 using Cache = BossIntegration.Boss.Cache;
 
 namespace BossIntegration.UI;
@@ -104,7 +102,7 @@ internal class ModBossUI
         UpdateWaitPanels();
     }
 
-    #endregion
+    #endregion Initialization
 
     #region Update
 
@@ -197,7 +195,7 @@ internal class ModBossUI
     public static bool HasHealthPanel(ModBoss boss)
         => MainPanel != null && MainPanel.transform.Find(GetHealthKey(boss)) == null;
 
-    #endregion
+    #endregion Update
 
     public static void AddHealthPanel(ModBoss boss, Bloon bloon, ref BossUI ui, int round)
     {

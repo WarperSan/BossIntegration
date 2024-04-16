@@ -3,6 +3,7 @@ using Il2CppAssets.Scripts.Simulation.Bloons;
 using System.Collections.Generic;
 
 namespace BossIntegration.Boss;
+
 public static class AliveCache
 {
     private static readonly Dictionary<ObjectId, BossUI> BossesAlive = new();
@@ -42,6 +43,6 @@ public static class AliveCache
     public static bool IsAliveBoss(this Bloon bloon, out ModBoss? boss)
         => Cache.TryGetBoss(bloon, out boss) && BossesAlive.ContainsKey(bloon.Id);
 
-    public static bool GetBossUI(this Bloon bloon, out BossUI ui) 
+    public static bool GetBossUI(this Bloon bloon, out BossUI ui)
         => BossesAlive.TryGetValue(bloon.Id, out ui);
 }
